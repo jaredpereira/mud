@@ -1,9 +1,5 @@
 import { makeRouter } from "./lib/api";
 import { handleOptions } from "./lib/handleOptions";
-import { create_community_route } from "./routes/create_community";
-import { get_space_route } from "./routes/get_space";
-import { getStudioRoute, get_community_route } from "./routes/get_studio";
-import { LoginRoute } from "./routes/login";
 import { SignupRoute } from "./routes/signup";
 export { SpaceDurableObject } from "./SpaceDurableObject";
 
@@ -11,22 +7,13 @@ export default {
   fetch: handleRequest,
 };
 
-const Routes = [
-  SignupRoute,
-  LoginRoute,
-  getStudioRoute,
-  get_community_route,
-  get_space_route,
-  create_community_route,
-];
+const Routes = [SignupRoute];
 export type WorkerRoutes = typeof Routes;
 
 let router = makeRouter(Routes);
 
 export type Bindings = {
   APP_EVENT_ANALYTICS: AnalyticsEngineDataset;
-  SUPABASE_API_TOKEN: string;
-  SUPABASE_URL: string;
   SPACES: DurableObjectNamespace;
   USER_UPLOADS: R2Bucket;
 };

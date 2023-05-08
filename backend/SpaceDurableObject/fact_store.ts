@@ -26,24 +26,9 @@ export interface BasicStorage {
   put<T>(key: string, value: T): Promise<void>;
   delete(key: string, options?: DurableObjectPutOptions): Promise<boolean>;
 }
-export const store = (storage: BasicStorage, ctx: { id: string }) => {
+export const store = (storage: BasicStorage, _ctx: { id: string }) => {
   async function getSchema(attribute: string): Promise<Schema | undefined> {
-    let defaultAttribute = Attribute[attribute as keyof Attribute];
-    if (defaultAttribute) return defaultAttribute;
-
-    let attributeFact = await scanIndex.ave("name", attribute);
-    if (!attributeFact) return;
-
-    let schema: Schema = {
-      type:
-        (await scanIndex.eav(attributeFact.entity, "type"))?.value || "string",
-      unique:
-        (await scanIndex.eav(attributeFact.entity, "unique"))?.value || false,
-      cardinality:
-        (await scanIndex.eav(attributeFact.entity, "cardinality"))?.value ||
-        "one",
-    };
-    return schema;
+    return Attribute[attribute as keyof Attribute];
   }
 
   const writeFactToStore = async (f: Fact<keyof Attribute>, schema: Schema) => {
@@ -161,7 +146,6 @@ export const store = (storage: BasicStorage, ctx: { id: string }) => {
         {
           ...existingFact,
           ...data,
-          positions: { ...existingFact.positions, ...data.positions },
           lastUpdated: Date.now().toString(),
         },
         schema
@@ -184,7 +168,6 @@ export const store = (storage: BasicStorage, ctx: { id: string }) => {
           return { success: false, error: "Invalid attribute" } as const;
         let factID = f.factID || ulid();
         let lastUpdated = Date.now().toString();
-        let existingFact: Fact<keyof Attribute> | undefined;
         if (schema.cardinality === "one") {
           let existingFact = (await scanIndex.eav(f.entity, f.attribute)) as
             | Fact<keyof Attribute>
@@ -195,7 +178,6 @@ export const store = (storage: BasicStorage, ctx: { id: string }) => {
         let result = await writeFactToStore(
           {
             ...f,
-            positions: { ...existingFact?.positions, ...f.positions },
             id: factID,
             lastUpdated,
             schema,

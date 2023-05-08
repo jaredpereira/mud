@@ -17,15 +17,14 @@ test("retracting a fact marks it as retracted", async () => {
   let entity = ulid();
   await fact_store.assertFact({
     entity,
-    attribute: "card/title",
+    attribute: "space/studio",
     value: "Title",
-    positions: {},
   });
-  let fact = await fact_store.scanIndex.eav(entity, "card/title");
+  let fact = await fact_store.scanIndex.eav(entity, "space/studio");
   expect(fact?.value).toBe("Title");
   if (!fact) throw new Error();
   await fact_store.retractFact(fact.id);
-  let retractedFact = await fact_store.scanIndex.eav(entity, "card/title");
+  let retractedFact = await fact_store.scanIndex.eav(entity, "space/studio");
   expect(retractedFact).toBeFalsy();
 });
 
@@ -38,9 +37,8 @@ test("single cardinality asserts should only create one fact even with multiple 
     ["value 1", "value 2", "value 3"].map((value) =>
       fact_store.assertFact({
         entity,
-        attribute: "card/content",
+        attribute: "block/content",
         value,
-        positions: {},
       })
     )
   );
@@ -60,9 +58,8 @@ test("you can't assert a fact with an unknown attribute", async () => {
   let entity = ulid();
   let result = await fact_store.assertFact({
     entity,
-    attribute: "unknown attr" as "card/content",
+    attribute: "unknown attr" as "block/content",
     value: "nada",
-    positions: {},
   });
   expect(result.success).toBe(false);
   let newFacts = [
@@ -74,36 +71,6 @@ test("you can't assert a fact with an unknown attribute", async () => {
   expect(newFacts.length).toEqual(0);
 });
 
-test("you can assert a fact if you create the attribute first", async () => {
-  const storage = await getMiniflareDurableObjectStorage(id);
-  let fact_store = store(storage, { id: "" });
-  let newAttributeName = "a-new-attribute" as "arbitrarySectionStringType";
-
-  let attributeEntity = ulid();
-  await Promise.all([
-    fact_store.assertFact({
-      entity: attributeEntity,
-      attribute: "name",
-      value: newAttributeName,
-      positions: {},
-    }),
-    fact_store.assertFact({
-      entity: attributeEntity,
-      attribute: "type",
-      value: "string",
-      positions: {},
-    }),
-  ]);
-
-  let result = await fact_store.assertFact({
-    entity: ulid(),
-    attribute: newAttributeName,
-    value: "a value",
-    positions: {},
-  });
-  expect(result.success).toBe(true);
-});
-
 test("You can't create multiple facts with the same value of a unique attribute", async () => {
   const storage = await getMiniflareDurableObjectStorage(id);
   let fact_store = store(storage, { id: "" });
@@ -112,23 +79,21 @@ test("You can't create multiple facts with the same value of a unique attribute"
   let originalEntity = ulid();
   await fact_store.assertFact({
     entity: originalEntity,
-    attribute: "card/title",
+    attribute: "space/studio",
     value: uniqueValue,
-    positions: {},
   });
 
   expect(
-    (await fact_store.scanIndex.ave("card/title", uniqueValue))?.entity
+    (await fact_store.scanIndex.ave("space/studio", uniqueValue))?.entity
   ).toBe(originalEntity);
 
   let result = await fact_store.assertFact({
     entity: ulid(),
-    attribute: "card/title",
+    attribute: "space/studio",
     value: uniqueValue,
-    positions: {},
   });
   expect(result.success).toBe(false);
   expect(
-    (await fact_store.scanIndex.ave("card/title", uniqueValue))?.entity
+    (await fact_store.scanIndex.ave("space/studio", uniqueValue))?.entity
   ).toBe(originalEntity);
 });

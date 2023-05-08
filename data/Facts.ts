@@ -6,7 +6,6 @@ export type FactMetadata = {
   retracted?: boolean;
   lastUpdated: string;
   schema: Schema;
-  positions: { [k: string]: string };
 };
 
 export type Schema = {

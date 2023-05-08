@@ -10,7 +10,7 @@ export const useKeyboardHandling = (deps: {
     type: "string";
     cardinality: "one";
   }>;
-  suggestions: Fact<"card/title">[];
+  suggestions: Fact<"block/content">[];
   close: () => void;
   cursorCoordinates?: { textIndex: number };
   suggestionPrefix?: string;
@@ -65,7 +65,6 @@ export const useKeyboardHandling = (deps: {
           entity: entityID,
           attribute: section,
           value: newValue,
-          positions: {},
         });
         ref?.current?.setSelectionRange(
           cursors[0] + offset,

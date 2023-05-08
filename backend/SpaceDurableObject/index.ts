@@ -2,23 +2,10 @@ import { Bindings } from "backend";
 import { Lock } from "src/lock";
 import { makeRouter } from "backend/lib/api";
 import { store } from "./fact_store";
-import { claimRoute } from "./routes/claim";
-import { create_space_route } from "./routes/create_space";
-import { delete_file_upload_route } from "./routes/delete_file_upload";
-import { get_share_code_route } from "./routes/get_share_code";
-import { get_space_route } from "./routes/get_space";
-import { join_route } from "./routes/join";
 import { pullRoute } from "./routes/pull";
 import { push_route } from "./routes/push";
 import { connect } from "./socket";
-import { handleFileUpload } from "./upload_file";
 import { migrations } from "./migrations";
-import { update_local_space_data_route } from "./internal_routes/update_local_space_data";
-import { update_self_route } from "./routes/update_self";
-import { delete_self_route } from "./routes/delete_self";
-import { claim_as_community_route } from "./routes/claim_as_community";
-import { add_space_data_route } from "./internal_routes/add_space";
-import { sync_notifications_route } from "./internal_routes/sync_notifications";
 
 export type Env = {
   factStore: ReturnType<typeof store>;
@@ -29,28 +16,9 @@ export type Env = {
   env: Bindings;
 };
 
-let routes = [
-  pullRoute,
-  push_route,
-  claimRoute,
-  claim_as_community_route,
-  create_space_route,
-  get_space_route,
-  get_share_code_route,
-  join_route,
-  delete_file_upload_route,
-  update_self_route,
-  delete_self_route,
-];
-let private_routes = [
-  update_local_space_data_route,
-  add_space_data_route,
-  sync_notifications_route,
-];
-export type PrivateSpaceRoutes = typeof private_routes;
+let routes = [pullRoute, push_route];
 export type SpaceRoutes = typeof routes;
 let router = makeRouter(routes);
-let internalRouter = makeRouter(private_routes);
 
 export class SpaceDurableObject implements DurableObject {
   throttled = false;
@@ -108,17 +76,11 @@ export class SpaceDurableObject implements DurableObject {
       factStore: store(this.state.storage, { id: this.state.id.toString() }),
     };
     switch (path[1]) {
-      case "upload_file": {
-        return handleFileUpload(request, ctx);
-      }
       case "socket": {
         return connect.bind(this)(request);
       }
       case "api": {
         return router(path[2], request, ctx);
-      }
-      case "internal_api": {
-        return internalRouter(path[2], request, ctx);
       }
       default:
         return new Response("", { status: 404 });

@@ -1,22 +1,30 @@
-import { spaceAPI, workerAPI } from "backend/lib/api";
+import { spaceAPI } from "backend/lib/api";
 import { z } from "zod";
 import { pullRoute } from "backend/SpaceDurableObject/routes/pull";
+import { createContext, useEffect, useRef, useState } from "react";
+import {
+  Puller,
+  PullRequest,
+  Pusher,
+  PushRequest,
+  Replicache,
+} from "replicache";
+import { UndoManager } from "@rocicorp/undo";
 import {
   FactWithIndexes,
-  makeReplicache,
+  makeMutators,
   MessageWithIndexes,
-  ReplicacheContext,
-} from "hooks/useReplicache";
-import { useEffect, useRef, useState } from "react";
-import { PullRequest, PushRequest } from "replicache";
-import { useAuth } from "hooks/useAuth";
-import { useRouter } from "next/router";
-import useSWR, { mutate } from "swr";
-import { UndoManager } from "@rocicorp/undo";
-import { authToken } from "backend/lib/auth";
+  ReplicacheMutators,
+} from "src/replicache";
 
 const WORKER_URL = process.env.NEXT_PUBLIC_WORKER_URL as string;
 const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL as string;
+
+export let ReplicacheContext = createContext<{
+  rep: Replicache<ReplicacheMutators>;
+  id: string;
+  undoManager: UndoManager;
+} | null>(null);
 export const SpaceProvider: React.FC<
   React.PropsWithChildren<{ id: string }>
 > = (props) => {
@@ -56,12 +64,9 @@ export const SpaceProvider: React.FC<
       socket.current?.close();
     };
   }, [props.id, rep, reconnectSocket]);
-  let { session, authToken } = useAuth();
   useEffect(() => {
     let newRep = makeSpaceReplicache({
       id: props.id,
-      session: session.session?.studio || "unauthorized",
-      authToken,
       undoManager: undoManager,
       onPull: () => {
         if (socket.current) {
@@ -75,7 +80,7 @@ export const SpaceProvider: React.FC<
     return () => {
       newRep.close();
     };
-  }, [props.id, authToken, session.session?.studio, undoManager]);
+  }, [props.id, undoManager]);
 
   return (
     <ReplicacheContext.Provider
@@ -86,59 +91,21 @@ export const SpaceProvider: React.FC<
   );
 };
 
-export const prefetchSpaceId = (studio: string, space: string) => {
-  let id = workerAPI(WORKER_URL, "get_space", {
-    studio: studio,
-    space: space,
-  });
-  mutate("/studio/" + studio + "/space/" + space, id);
-};
-
-export const SpaceSpaceProvider: React.FC<
-  React.PropsWithChildren<{
-    loading: React.ReactElement;
-    notFound: React.ReactElement;
-  }>
-> = (props) => {
-  let router = useRouter();
-  let { data: id } = useSWR(
-    "persist-/studio/" + router.query.studio + "/space/" + router.query.space,
-    () => {
-      let id = workerAPI(WORKER_URL, "get_space", {
-        studio: router.query.studio as string,
-        space: router.query.space as string,
-      });
-      return id;
-    },
-    { revalidateOnFocus: false }
-  );
-  if (!id) return props.loading;
-  if (!id.success) return props.notFound;
-  return <SpaceProvider id={id.id}>{props.children}</SpaceProvider>;
-};
-
 export const makeSpaceReplicache = ({
   id,
-  session,
   onPull,
-  authToken,
   undoManager,
 }: {
   id: string;
-  session?: string;
   onPull?: () => void;
-  authToken?: authToken | null;
   undoManager: UndoManager;
 }) =>
   makeReplicache({
-    name: `space-${id}-${session}-${WORKER_URL}`,
+    name: `space-${id}-${WORKER_URL}`,
     pusher: async (request) => {
       let data: PushRequest = await request.json();
-      if (!authToken)
-        return { httpStatusCode: 200, errorMessage: "no user logged in" };
       await spaceAPI(`${WORKER_URL}/space/${id}`, "push", {
         ...data,
-        authToken,
       });
       return { httpStatusCode: 200, errorMessage: "" };
     },
@@ -180,3 +147,42 @@ export const makeSpaceReplicache = ({
     },
     undoManager: undoManager,
   });
+
+const makeReplicache = (args: {
+  puller: Puller;
+  pusher: Pusher;
+  name: string;
+  undoManager: UndoManager;
+}) => {
+  let grabData = function (): {
+    rep: Replicache<ReplicacheMutators>;
+    undoManager: UndoManager;
+  } {
+    return {
+      undoManager: args.undoManager,
+      rep: rep,
+    };
+  };
+
+  // let [undoManager] = useState(new UndoManager());
+  let rep = new Replicache({
+    licenseKey: "l381074b8d5224dabaef869802421225a",
+    schemaVersion: "1.0.1",
+    name: args.name,
+    pushDelay: 500,
+    pusher: args.pusher,
+    puller: args.puller,
+    mutators: makeMutators(grabData),
+    logLevel: "error",
+    indexes: {
+      eav: { jsonPointer: "/indexes/eav", allowEmpty: true },
+      aev: { jsonPointer: "/indexes/aev", allowEmpty: true },
+      ave: { jsonPointer: "/indexes/ave", allowEmpty: true },
+      vae: { jsonPointer: "/indexes/vae", allowEmpty: true },
+      at: { jsonPointer: "/indexes/at", allowEmpty: true },
+      messages: { jsonPointer: "/indexes/messages", allowEmpty: true },
+    },
+  });
+
+  return rep;
+};

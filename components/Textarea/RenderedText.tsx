@@ -1,42 +1,12 @@
-import React, { forwardRef, useCallback, useContext } from "react";
+import React, { forwardRef, useCallback } from "react";
 import Linkify from "linkify-react";
 import { parseLine } from "src/parseMarkdownLine";
-import { useCardViewer } from "components/CardViewerContext";
-import {
-  ReplicacheContext,
-  scanIndex,
-  useMutations,
-} from "hooks/useReplicache";
-import { ulid } from "src/ulid";
 
 export const RenderedText = forwardRef<
   HTMLPreElement,
   { text: string; renderLinks?: boolean } & JSX.IntrinsicElements["pre"]
 >((props, ref) => {
-  let { open } = useCardViewer();
-  let { mutate, authorized, memberEntity } = useMutations();
-  let rep = useContext(ReplicacheContext);
-  let openLink = useCallback(
-    async (link: string) => {
-      let entity = await rep?.rep.query((tx) =>
-        scanIndex(tx).ave("card/title", link.slice(2, -2))
-      );
-      if (!entity || entity.value !== link.slice(2, -2)) {
-        if (!authorized || !memberEntity) return;
-        let entityID = ulid();
-        await mutate("createCard", {
-          entityID,
-          title: link.slice(2, -2),
-          memberEntity,
-        });
-
-        open({ entityID });
-        return;
-      }
-      open({ entityID: entity.entity });
-    },
-    [open, rep?.rep]
-  );
+  let openLink = useCallback(async (_link: string) => {}, []);
   let parseConfig = {
     renderLinks: props.renderLinks,
     openLink,
