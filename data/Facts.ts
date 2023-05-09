@@ -30,28 +30,11 @@ type Value<A extends AttributeName> = Attribute[A] extends {
       string: string;
       number: number;
       boolean: boolean;
-      "last-read-message": {
-        chat: string;
-        message: number;
+      parent: {
+        type: "parent";
+        value: string;
+        position: string;
       };
-      position: {
-        type: "position";
-        x: number;
-        y: number;
-        rotation: number;
-        size: "small" | "big";
-      };
-      file:
-        | {
-            type: "file";
-            id: string;
-            filetype: "image";
-          }
-        | {
-            type: "file";
-            url: string;
-            filetype: "external_image";
-          };
       reference: ReferenceType;
       flag: {
         type: "flag";

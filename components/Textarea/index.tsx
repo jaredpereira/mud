@@ -94,6 +94,7 @@ export const Textarea = (
   return (
     <AutosizeTextarea
       {...newProps}
+      spellCheck={false}
       className={`dontundo ${props.className}`}
       onKeyDown={(e) => {
         props.onKeyDown?.(e, textarea);

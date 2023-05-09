@@ -57,7 +57,7 @@ export const store = (storage: BasicStorage, _ctx: { id: string }) => {
           indexes.av(existingFact.attribute, existingFact.value as string)
         );
 
-      if (schema.type === "reference")
+      if (schema.type === "reference" || schema.type === "parent")
         storage.delete(
           indexes.va(
             existingFact.value as ReferenceType,
@@ -74,7 +74,7 @@ export const store = (storage: BasicStorage, _ctx: { id: string }) => {
     if (schema.unique && f.value) {
       storage.put(indexes.av(f.attribute, f.value as string), f);
     }
-    if (schema.type === "reference") {
+    if (schema.type === "reference" || schema.type === "parent") {
       storage.put(indexes.va(f.value as ReferenceType, f.attribute, f.id), f);
     }
     return { success: true };

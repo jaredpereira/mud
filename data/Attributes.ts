@@ -14,8 +14,7 @@ export const BaseAttributes = {
     unique: false,
     cardinality: "one",
     "union/value": [
-      "file",
-      "last-read-message",
+      "parent",
       "timestamp",
       "string",
       "union",
@@ -50,10 +49,10 @@ export const DefaultAttributes = {
     unique: false,
     cardinality: "one",
   },
-  "block/child": {
-    type: "reference",
+  "block/parent": {
+    type: "parent",
     unique: false,
-    cardinality: "many",
+    cardinality: "one",
   },
   "block/inline-link": {
     type: "reference",
@@ -96,7 +95,7 @@ export type UniqueAttributes = {
 };
 
 export type ReferenceAttributes = {
-  [A in keyof Attribute as Attribute[A]["type"] extends "reference"
+  [A in keyof Attribute as Attribute[A]["type"] extends "reference" | "parent"
     ? A
     : never]: Attribute[A];
 };

@@ -1,3 +1,6 @@
+import { ReadTransaction } from "replicache";
+import { scanIndex } from "./replicache";
+
 export const getCurrentDate = () => {
   const date = new Date();
   const year = date.getFullYear();
@@ -28,4 +31,25 @@ export function getLinkAtCursor(text: string, cursor: number) {
     start,
     end,
   };
+}
+
+export function sortByPosition(
+  a: { value: { position: string }; id: string },
+  b: { value: { position: string }; id: string }
+) {
+  let aPosition = a.value.position,
+    bPosition = b.value.position;
+  if (aPosition === bPosition) return a.id > b.id ? 1 : -1;
+  return aPosition > bPosition ? 1 : -1;
+}
+
+export async function getLastChild(
+  tx: ReadTransaction,
+  parent: string
+): Promise<string> {
+  let children = (await scanIndex(tx).vae(parent, "block/parent")).sort(
+    sortByPosition
+  );
+  if (children.length === 0) return parent;
+  return getLastChild(tx, children[children.length - 1].entity);
 }

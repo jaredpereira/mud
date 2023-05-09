@@ -1,27 +1,28 @@
-import { FilterAttributes } from "data/Attributes";
+import { BlockProps } from "components/Block";
+import { ReplicacheContext } from "components/ReplicacheProvider";
 import { Fact } from "data/Facts";
-import { useCallback } from "react";
+import { useCallback, useContext } from "react";
+import { ulid } from "src/ulid";
+import { getLastChild } from "src/utils";
 import { useMutations } from "./useReplicache";
 
-export const useKeyboardHandling = (deps: {
-  entityID: string;
-  section: keyof FilterAttributes<{
-    unique: any;
-    type: "string";
-    cardinality: "one";
-  }>;
-  suggestions: Fact<"block/content">[];
-  close: () => void;
-  cursorCoordinates?: { textIndex: number };
-  suggestionPrefix?: string;
-  suggestionIndex: number;
-  setSuggestionIndex: (x: number | ((x: number) => number)) => void;
-}) => {
+export const useKeyboardHandling = (
+  deps: {
+    firstChild?: string;
+    suggestions: Fact<"block/content">[];
+    close: () => void;
+    cursorCoordinates?: { textIndex: number };
+    suggestionPrefix?: string;
+    suggestionIndex: number;
+    setSuggestionIndex: (x: number | ((x: number) => number)) => void;
+  } & BlockProps
+) => {
   let { mutate, action } = useMutations();
+  let rep = useContext(ReplicacheContext)?.rep;
 
   let {
+    parent,
     entityID,
-    section,
     suggestions,
     setSuggestionIndex,
     cursorCoordinates,
@@ -30,13 +31,22 @@ export const useKeyboardHandling = (deps: {
     suggestionPrefix,
   } = deps;
   return useCallback(
-    (
+    async (
       e: React.KeyboardEvent<HTMLTextAreaElement>,
       ref?: React.MutableRefObject<HTMLTextAreaElement | null>
     ) => {
       let value = e.currentTarget.value,
         start = e.currentTarget.selectionStart,
         end = e.currentTarget.selectionEnd;
+      const keepFocus = () => {
+        document.getElementById(entityID)?.focus();
+        setTimeout(() => {
+          document
+            .getElementById(entityID)
+            //@ts-ignore
+            ?.setSelectionRange?.(start, end);
+        }, 10);
+      };
       let transact = async (
         transaction: Transaction,
         offset: number = 0,
@@ -63,7 +73,7 @@ export const useKeyboardHandling = (deps: {
           });
         await mutate("assertFact", {
           entity: entityID,
-          attribute: section,
+          attribute: "block/content",
           value: newValue,
         });
         ref?.current?.setSelectionRange(
@@ -83,6 +93,17 @@ export const useKeyboardHandling = (deps: {
           break;
         }
         case "Enter": {
+          if (e.ctrlKey) {
+            let child = ulid();
+            await mutate("addChildBlock", {
+              factID: ulid(),
+              parent: parent,
+              after: entityID,
+              child,
+            });
+            document.getElementById(child)?.focus();
+            break;
+          }
           if (suggestions.length > 0 && !!cursorCoordinates) {
             e.preventDefault();
             let value = suggestions[suggestionIndex] || suggestions[0];
@@ -107,8 +128,8 @@ export const useKeyboardHandling = (deps: {
           break;
         }
         case "Tab": {
+          e.preventDefault();
           if (suggestions.length > 0 && !!cursorCoordinates) {
-            e.preventDefault();
             if (e.shiftKey) {
               if (suggestionIndex > 0) setSuggestionIndex((i) => i - 1);
             } else {
@@ -116,6 +137,14 @@ export const useKeyboardHandling = (deps: {
                 setSuggestionIndex((i) => i + 1);
             }
             break;
+          } else {
+            if (e.shiftKey) {
+              await mutate("outdentBlock", { factID: ulid(), entityID });
+            } else {
+              if (!deps.before) break;
+              await mutate("indentBlock", { factID: ulid(), entityID });
+            }
+            keepFocus();
           }
           break;
         }
@@ -137,13 +166,53 @@ export const useKeyboardHandling = (deps: {
           break;
         }
 
+        case "l": {
+          if (!e.ctrlKey) break;
+          e.preventDefault();
+          await mutate("indentBlock", { entityID, factID: ulid() });
+          keepFocus();
+          break;
+        }
+
+        case "h": {
+          if (!e.ctrlKey) break;
+          e.preventDefault();
+          await mutate("outdentBlock", { entityID, factID: ulid() });
+          keepFocus();
+          break;
+        }
+        case "K": {
+          if (!e.ctrlKey) break;
+          e.preventDefault();
+
+          if (deps.before) {
+            let before = deps.before;
+            if (!rep) return;
+            let lastchild = await rep.query((tx) => getLastChild(tx, before));
+            document.getElementById(lastchild)?.focus();
+          } else {
+            document.getElementById(deps.parent)?.focus();
+          }
+          break;
+        }
         case "k": {
           if (!e.ctrlKey) break;
           if (suggestions.length > 0 && !!cursorCoordinates) {
             e.preventDefault();
             if (suggestionIndex > 0) setSuggestionIndex((i) => i - 1);
             break;
+          } else {
+            e.preventDefault();
+            await mutate("moveBlockUp", { entityID });
           }
+          break;
+        }
+        case "J": {
+          if (!e.ctrlKey) break;
+          e.preventDefault();
+          if (deps.firstChild)
+            document.getElementById(deps.firstChild)?.focus();
+          else if (deps.after) document.getElementById(deps.after)?.focus();
           break;
         }
         case "j": {
@@ -153,6 +222,10 @@ export const useKeyboardHandling = (deps: {
             if (suggestionIndex < suggestions.length - 1)
               setSuggestionIndex((i) => i + 1);
             break;
+          } else {
+            e.preventDefault();
+
+            await mutate("moveBlockDown", { entityID });
           }
           break;
         }
@@ -179,6 +252,9 @@ export const useKeyboardHandling = (deps: {
               text.delete(start - 2, 2);
             }, -2);
             break;
+          }
+          if (value === "") {
+            mutate("deleteBlock", { entity: entityID });
           }
 
           break;
@@ -255,14 +331,7 @@ export const useKeyboardHandling = (deps: {
         }
       }
     },
-    [
-      suggestions,
-      setSuggestionIndex,
-      cursorCoordinates,
-      close,
-      suggestionIndex,
-      suggestionPrefix,
-    ]
+    [...Object.values(deps), rep]
   );
 };
 
