@@ -49,6 +49,7 @@ body {
   @apply text-grey-15;
   min-height: -webkit-fill-available;
   font-family: "Quattro";
+  scrollbar-gutter: stable;
 }
 
 #__next {

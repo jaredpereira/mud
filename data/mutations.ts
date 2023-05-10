@@ -208,16 +208,31 @@ const outdentBlock: Mutation<{ entityID: string; factID: string }> = async (
     await ctx.scanIndex.vae(grandParent.value.value, "block/parent")
   ).sort(sortByPosition);
 
-  let position = grandSiblings.findIndex(
+  let siblings = (
+    await ctx.scanIndex.vae(parent.value.value, "block/parent")
+  ).sort(sortByPosition);
+
+  let parentPosition = grandSiblings.findIndex(
     (s) => s.entity === parent?.value.value
   );
+  if (parentPosition < 0) return;
+  let position = siblings.findIndex((s) => s.entity === args.entityID);
   if (position < 0) return;
+  for (let sibling of siblings.slice(position)) {
+    await ctx.updateFact(sibling.id, {
+      value: {
+        position: sibling.value.position,
+        value: args.entityID,
+        type: "parent",
+      },
+    });
+  }
 
   await ctx.updateFact(parent.id, {
     value: {
       position: generateKeyBetween(
-        grandSiblings[position]?.value.position || null,
-        grandSiblings[position + 1]?.value.position || null
+        grandSiblings[parentPosition]?.value.position || null,
+        grandSiblings[parentPosition + 1]?.value.position || null
       ),
       value: grandParent.value.value,
       type: "parent",

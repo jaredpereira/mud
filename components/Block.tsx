@@ -4,6 +4,7 @@ import { useKeyboardHandling } from "hooks/useKeyboardHandling";
 import { db, useMutations } from "hooks/useReplicache";
 import { SyntheticEvent, useCallback, useRef, useState } from "react";
 import { getCoordinatesInTextarea } from "src/getCoordinatesInTextarea";
+import { useOpenStates } from "src/openStates";
 import { getLinkAtCursor, sortByPosition } from "src/utils";
 
 export type BlockProps = {
@@ -11,6 +12,7 @@ export type BlockProps = {
   entityID: string;
   parent: string;
   before?: string;
+  depth: number;
   after?: string;
 };
 
@@ -30,6 +32,7 @@ export function Block(props: BlockProps) {
     cursorCoordinates,
     ...suggestions,
   });
+  let color = props.depth % 2 === 1 ? "bg-[#FFE4B5]" : "bg-[#FFF8DC]";
 
   const onSelect = useCallback(
     (e: SyntheticEvent<HTMLTextAreaElement>) => {
@@ -65,7 +68,7 @@ export function Block(props: BlockProps) {
   let textareaRef = useRef<HTMLTextAreaElement | null>(null);
   let timeout = useRef<null | number>(null);
   return (
-    <div className="border p-3">
+    <div className={`rounded-md border ${color} p-4 pr-1`}>
       {cursorCoordinates && suggestions.suggestionPrefix && (
         <Autocomplete
           {...suggestions}
@@ -138,28 +141,44 @@ export function Block(props: BlockProps) {
           previousSelection.current = { start, end };
         }}
       />
-      <BlockChildren entityID={props.entityID} after={props.after} />
+      <BlockChildren
+        entityID={props.entityID}
+        after={props.after}
+        depth={props.depth}
+      />
     </div>
   );
 }
 
-export function BlockChildren(props: { entityID: string; after?: string }) {
+export function BlockChildren(props: {
+  entityID: string;
+  after?: string;
+  depth: number;
+}) {
   let children = db
     .useReference(props.entityID, "block/parent")
     ?.sort(sortByPosition);
+  let expanded = useOpenStates((s) => s.openStates[props.entityID]);
   if (children?.length === 0) return null;
   return (
     <div className="flex flex-col gap-2 pt-2">
-      {children?.map((block, index) => (
-        <Block
-          factID={block.id}
-          before={children?.[index - 1]?.entity}
-          after={children?.[index + 1]?.entity || props.after}
-          key={block.entity}
-          entityID={block.entity}
-          parent={block.value.value}
-        />
-      ))}
+      {!expanded ? (
+        <button className="w-fit text-sm italic underline">
+          {children.length} children
+        </button>
+      ) : (
+        children?.map((block, index) => (
+          <Block
+            factID={block.id}
+            before={children?.[index - 1]?.entity}
+            after={children?.[index + 1]?.entity || props.after}
+            key={block.entity}
+            entityID={block.entity}
+            parent={block.value.value}
+            depth={props.depth + 1}
+          />
+        ))
+      )}
     </div>
   );
 }

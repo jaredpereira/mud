@@ -2,8 +2,8 @@ import { BlockProps } from "components/Block";
 import { ReplicacheContext } from "components/ReplicacheProvider";
 import { Fact } from "data/Facts";
 import { useCallback, useContext } from "react";
+import { getLastOpenChild, useOpenStates } from "src/openStates";
 import { ulid } from "src/ulid";
-import { getLastChild } from "src/utils";
 import { useMutations } from "./useReplicache";
 
 export const useKeyboardHandling = (
@@ -45,7 +45,7 @@ export const useKeyboardHandling = (
             .getElementById(entityID)
             //@ts-ignore
             ?.setSelectionRange?.(start, end);
-        }, 10);
+        }, 50);
       };
       let transact = async (
         transaction: Transaction,
@@ -93,17 +93,6 @@ export const useKeyboardHandling = (
           break;
         }
         case "Enter": {
-          if (e.ctrlKey) {
-            let child = ulid();
-            await mutate("addChildBlock", {
-              factID: ulid(),
-              parent: parent,
-              after: entityID,
-              child,
-            });
-            document.getElementById(child)?.focus();
-            break;
-          }
           if (suggestions.length > 0 && !!cursorCoordinates) {
             e.preventDefault();
             let value = suggestions[suggestionIndex] || suggestions[0];
@@ -125,6 +114,18 @@ export const useKeyboardHandling = (
             close();
             break;
           }
+          if (!e.shiftKey) {
+            e.preventDefault();
+            let child = ulid();
+            await mutate("addChildBlock", {
+              factID: ulid(),
+              parent: parent,
+              after: entityID,
+              child,
+            });
+            document.getElementById(child)?.focus();
+            break;
+          }
           break;
         }
         case "Tab": {
@@ -142,6 +143,13 @@ export const useKeyboardHandling = (
               await mutate("outdentBlock", { factID: ulid(), entityID });
             } else {
               if (!deps.before) break;
+              let before = deps.before;
+              useOpenStates.setState((s) => ({
+                openStates: {
+                  ...s.openStates,
+                  [before]: true,
+                },
+              }));
               await mutate("indentBlock", { factID: ulid(), entityID });
             }
             keepFocus();
@@ -165,34 +173,48 @@ export const useKeyboardHandling = (
           }
           break;
         }
-
-        case "l": {
-          if (!e.ctrlKey) break;
-          e.preventDefault();
-          await mutate("indentBlock", { entityID, factID: ulid() });
-          keepFocus();
-          break;
-        }
-
         case "h": {
           if (!e.ctrlKey) break;
           e.preventDefault();
-          await mutate("outdentBlock", { entityID, factID: ulid() });
-          keepFocus();
+          if (start !== end) return;
+          if (!e.altKey) {
+            ref?.current?.setSelectionRange(start - 1, start - 1);
+            break;
+          }
+          let nextspace = e.currentTarget.value
+            .slice(0, start - 1)
+            .lastIndexOf(" ");
+          if (nextspace > 0)
+            ref?.current?.setSelectionRange(nextspace + 1, nextspace + 1);
+          else ref?.current?.setSelectionRange(0, 0);
           break;
         }
+        case "l": {
+          if (!e.ctrlKey) break;
+          e.preventDefault();
+          if (start !== end) return;
+          if (!e.altKey) {
+            ref?.current?.setSelectionRange(start + 1, start + 1);
+            break;
+          }
+          let nextspace = e.currentTarget.value.slice(start).indexOf(" ");
+          if (nextspace > 0)
+            ref?.current?.setSelectionRange(
+              start + nextspace + 1,
+              start + nextspace + 1
+            );
+          else
+            ref?.current?.setSelectionRange(
+              e.currentTarget.value.length,
+              e.currentTarget.value.length
+            );
+          break;
+        }
+
         case "K": {
           if (!e.ctrlKey) break;
           e.preventDefault();
-
-          if (deps.before) {
-            let before = deps.before;
-            if (!rep) return;
-            let lastchild = await rep.query((tx) => getLastChild(tx, before));
-            document.getElementById(lastchild)?.focus();
-          } else {
-            document.getElementById(deps.parent)?.focus();
-          }
+          await mutate("moveBlockUp", { entityID });
           break;
         }
         case "k": {
@@ -203,16 +225,24 @@ export const useKeyboardHandling = (
             break;
           } else {
             e.preventDefault();
-            await mutate("moveBlockUp", { entityID });
+
+            if (deps.before) {
+              let before = deps.before;
+              if (!rep) return;
+              let lastchild = await rep.query((tx) =>
+                getLastOpenChild(tx, before)
+              );
+              document.getElementById(lastchild)?.focus();
+            } else {
+              document.getElementById(deps.parent)?.focus();
+            }
           }
           break;
         }
         case "J": {
           if (!e.ctrlKey) break;
           e.preventDefault();
-          if (deps.firstChild)
-            document.getElementById(deps.firstChild)?.focus();
-          else if (deps.after) document.getElementById(deps.after)?.focus();
+          await mutate("moveBlockDown", { entityID });
           break;
         }
         case "j": {
@@ -224,12 +254,41 @@ export const useKeyboardHandling = (
             break;
           } else {
             e.preventDefault();
-
-            await mutate("moveBlockDown", { entityID });
+            if (
+              deps.firstChild &&
+              useOpenStates.getState().openStates[entityID]
+            )
+              document.getElementById(deps.firstChild)?.focus();
+            else if (deps.after) document.getElementById(deps.after)?.focus();
+          }
+          break;
+        }
+        case "o": {
+          if (e.ctrlKey) {
+            e.preventDefault();
+            useOpenStates.getState().setOpen(entityID, true);
+          }
+          break;
+        }
+        case "c": {
+          if (e.ctrlKey) {
+            e.preventDefault();
+            useOpenStates.getState().setOpen(entityID, false);
           }
           break;
         }
         case "Backspace": {
+          if (
+            value[start - 1] === "*" &&
+            value[start] === "*" &&
+            start === end
+          ) {
+            e.preventDefault();
+            transact((text) => {
+              text.delete(start - 1, 2);
+            }, -1);
+            break;
+          }
           if (
             value[start - 1] === "[" &&
             value[start] === "]" &&
@@ -255,6 +314,20 @@ export const useKeyboardHandling = (
           }
           if (value === "") {
             mutate("deleteBlock", { entity: entityID });
+            let id: string;
+            if (deps.before) {
+              let before = deps.before;
+              if (!rep) return;
+              id = await rep.query((tx) => getLastOpenChild(tx, before));
+            } else {
+              id = deps.parent;
+            }
+            document.getElementById(id)?.focus();
+            setTimeout(() => {
+              let el = document.getElementById(id);
+              //@ts-ignore
+              el?.setSelectionRange?.(el.value.length, el.value.length);
+            }, 10);
           }
 
           break;
@@ -289,9 +362,11 @@ export const useKeyboardHandling = (
               text.insert(start, "*");
               text.insert(end + 1, "*");
             });
-            //React seems to change the selection state if you set the value to something the current value is not
           } else {
-            if (e.currentTarget.value[start] === "*") {
+            if (
+              e.currentTarget.value[start] === "*" &&
+              e.currentTarget.value[start - 2] !== " "
+            ) {
               e.preventDefault();
               ref?.current?.setSelectionRange(start + 1, start + 1);
             } else

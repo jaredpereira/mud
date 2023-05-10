@@ -1,6 +1,17 @@
 import { useEffect, useRef, useState } from "react";
 import AutosizeTextarea from "./AutosizeTextarea";
 import { RenderedText } from "./RenderedText";
+import { create } from "zustand";
+
+let useFocusStore = create<{
+  mode: "edit" | "normal";
+  focused: undefined | string;
+  setFocused: (entity: string | undefined) => void;
+}>((set) => ({
+  mode: "normal",
+  focused: undefined,
+  setFocused: (id: string | undefined) => set({ focused: id }),
+}));
 
 export const Textarea = (
   props: {
@@ -17,16 +28,12 @@ export const Textarea = (
   let textarea = useRef<HTMLTextAreaElement | null>(null);
   let previewElement = useRef<HTMLPreElement | null>(null);
   let ignoreFocus = useRef(false);
+  let focused = useFocusStore((s) => s.focused === props.id);
+  let setFocused = useFocusStore((s) => s.setFocused);
 
   let [initialCursor, setInitialCursor] = useState<[number, number] | null>(
     null
   );
-  let [focused, setFocused] = useState(false);
-  useEffect(() => {
-    if (props.focused !== undefined) {
-      setFocused(props.focused);
-    }
-  }, [props.focused]);
 
   let newProps = { ...props };
   delete newProps.previewOnly;
@@ -54,14 +61,14 @@ export const Textarea = (
           width: "100%",
         }}
         onFocus={() => {
-          if (!ignoreFocus.current) setFocused(true);
+          if (!ignoreFocus.current) setFocused(props.id);
           ignoreFocus.current = false;
         }}
         onKeyDown={(e) => {
           if (e.key === "Enter") {
             if (e.isDefaultPrevented()) return;
             if (props.previewOnly) return;
-            setFocused(true);
+            setFocused(props.id);
             if (typeof props.value === "string")
               setInitialCursor([props.value?.length, props.value?.length]);
           }
@@ -86,7 +93,7 @@ export const Textarea = (
 
             setInitialCursor([start, end]);
           }
-          setFocused(true);
+          setFocused(props.id);
         }}
       />
     );
@@ -108,7 +115,6 @@ export const Textarea = (
         textarea.current?.setSelectionRange(start, end);
       }}
       onBlur={(e) => {
-        setFocused(false);
         setInitialCursor(null);
         props.onBlur?.(e);
       }}

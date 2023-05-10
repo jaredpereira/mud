@@ -28,7 +28,7 @@ function Blocks() {
       return aPosition > bPosition ? 1 : -1;
     });
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-3">
       <button
         onClick={() => {
           if (!home) return;
@@ -44,6 +44,7 @@ function Blocks() {
       </button>
       {rootBlocks?.map((block, index) => (
         <Block
+          depth={1}
           factID={block.id}
           before={rootBlocks?.[index - 1]?.entity}
           after={rootBlocks?.[index + 1]?.entity}

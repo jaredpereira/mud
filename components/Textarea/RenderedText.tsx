@@ -27,6 +27,12 @@ export const RenderedText = forwardRef<
           // One day we should do proper parsing but for now a line-based approach works
           // great
           props.text.split("\n").map((t, key) => {
+            if (t.startsWith("###"))
+              return (
+                <p className="text-grey-35 underline" key={key}>
+                  {parseLine(t, parseConfig)}
+                </p>
+              );
             if (t.startsWith("##"))
               return (
                 <p className="font-bold text-grey-35" key={key}>
