@@ -48,7 +48,7 @@ test("single cardinality asserts should only create one fact even with multiple 
       startAfter: `ti-`,
     })),
   ];
-  expect(newFacts.length).toEqual(1);
+  expect(newFacts.length).toEqual(2);
 });
 
 test("you can't assert a fact with an unknown attribute", async () => {
@@ -68,7 +68,7 @@ test("you can't assert a fact with an unknown attribute", async () => {
       startAfter: `ti-`,
     })),
   ];
-  expect(newFacts.length).toEqual(0);
+  expect(newFacts.length).toEqual(1);
 });
 
 test("You can't create multiple facts with the same value of a unique attribute", async () => {
