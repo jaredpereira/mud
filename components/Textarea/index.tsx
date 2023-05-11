@@ -3,7 +3,7 @@ import AutosizeTextarea from "./AutosizeTextarea";
 import { RenderedText } from "./RenderedText";
 import { create } from "zustand";
 
-let useFocusStore = create<{
+export let useFocusStore = create<{
   mode: "edit" | "normal";
   focused: undefined | string;
   setFocused: (entity: string | undefined) => void;
