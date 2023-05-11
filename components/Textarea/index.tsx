@@ -38,6 +38,7 @@ export const Textarea = (
   let newProps = { ...props };
   delete newProps.previewOnly;
   delete newProps.focused;
+  delete newProps.textareaRef;
 
   useEffect(() => {
     if (!focused || !textarea.current) return;
@@ -87,7 +88,9 @@ export const Textarea = (
             if (!range || !previewElement.current) return;
             if (range.startContainer !== range.endContainer) return;
             let length = range.toString().length;
+            console.log(length);
             range.setStart(previewElement.current, 0);
+            console.log(range.toString());
             let end = range.toString().length;
             let start = end - length;
 
@@ -112,10 +115,15 @@ export const Textarea = (
         let start = e.currentTarget.selectionStart,
           end = e.currentTarget.selectionEnd;
         await Promise.all([props.onChange(e)]);
-        textarea.current?.setSelectionRange(start, end);
+        requestAnimationFrame(() => {
+          if (
+            textarea.current?.selectionStart !== start ||
+            textarea.current.selectionEnd !== end
+          )
+            textarea.current?.setSelectionRange(start, end);
+        });
       }}
       onBlur={(e) => {
-        setInitialCursor(null);
         props.onBlur?.(e);
       }}
       ref={(node) => {
