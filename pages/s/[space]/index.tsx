@@ -14,9 +14,7 @@ export default function StudioPage() {
       </Head>
       {!query.space ? null : (
         <SpaceProvider id={query.space as string}>
-          <div className="flex flex-col gap-2">
-            <Blocks />
-          </div>
+          <Blocks />
         </SpaceProvider>
       )}
     </>

@@ -68,7 +68,7 @@ export function Block(props: BlockProps) {
   let textareaRef = useRef<HTMLTextAreaElement | null>(null);
   let timeout = useRef<null | number>(null);
   return (
-    <div className={`rounded-md border ${color} p-4 pr-1`}>
+    <div className={`rounded-md border ${color} p-2 pr-1`}>
       {cursorCoordinates && suggestions.suggestionPrefix && (
         <Autocomplete
           {...suggestions}

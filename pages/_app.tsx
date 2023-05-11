@@ -29,9 +29,7 @@ const Layout: React.FC<React.PropsWithChildren<unknown>> = (props) => {
       <Head>
         <title key="title">mud</title>
       </Head>
-      <div style={{ maxWidth: "48rem", margin: "auto", padding: "1rem" }}>
-        {props.children}
-      </div>
+      <div className="m-auto max-w-3xl p-2 md:p-4">{props.children}</div>
     </>
   );
 };
