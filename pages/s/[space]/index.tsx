@@ -1,18 +1,25 @@
 import { Block } from "components/Block";
 import { SpaceProvider } from "components/ReplicacheProvider";
 import { db, useMutations } from "hooks/useReplicache";
+import Head from "next/head";
 import { useRouter } from "next/router";
 import { ulid } from "src/ulid";
 
 export default function StudioPage() {
   let { query } = useRouter();
-  if (!query.space) return null;
   return (
-    <SpaceProvider id={query.space as string}>
-      <div className="flex flex-col gap-2">
-        <Blocks />
-      </div>
-    </SpaceProvider>
+    <>
+      <Head>
+        <link rel="manifest" href={`/api/manifest/${query.space}`} />
+      </Head>
+      {!query.space ? null : (
+        <SpaceProvider id={query.space as string}>
+          <div className="flex flex-col gap-2">
+            <Blocks />
+          </div>
+        </SpaceProvider>
+      )}
+    </>
   );
 }
 
