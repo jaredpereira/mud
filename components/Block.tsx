@@ -76,71 +76,74 @@ export function Block(props: BlockProps) {
           onClick={() => {}}
         />
       )}
-      <Textarea
-        id={props.entityID}
-        textareaRef={textareaRef}
-        onSelect={onSelect}
-        onKeyDown={onKeyDown}
-        className={`h-full min-h-[24px] w-full bg-inherit`}
-        value={content?.value || ""}
-        onChange={async (e) => {
-          if (!timeout.current) action.start();
-          else clearTimeout(timeout.current);
-          timeout.current = window.setTimeout(() => {
-            timeout.current = null;
-            action.end();
-          }, 200);
+      <div className="flex flex-row gap-1">
+        <Textarea
+          id={props.entityID}
+          textareaRef={textareaRef}
+          onSelect={onSelect}
+          onKeyDown={onKeyDown}
+          className={`h-full min-h-[24px] w-full bg-inherit`}
+          value={content?.value || ""}
+          onChange={async (e) => {
+            if (!timeout.current) action.start();
+            else clearTimeout(timeout.current);
+            timeout.current = window.setTimeout(() => {
+              timeout.current = null;
+              action.end();
+            }, 200);
 
-          let value = e.currentTarget.value,
-            start = e.currentTarget.selectionStart,
-            end = e.currentTarget.selectionEnd;
-          if (start !== end) return setCursorCoordinates(undefined);
+            let value = e.currentTarget.value,
+              start = e.currentTarget.selectionStart,
+              end = e.currentTarget.selectionEnd;
+            if (start !== end) return setCursorCoordinates(undefined);
 
-          let link = getLinkAtCursor(value, start);
-          suggestions.setSuggestionPrefix(link?.value);
-          if (!link) {
-            setCursorCoordinates(undefined);
-            suggestions.close();
-          }
-          if (link) {
-            let coordinates = getCoordinatesInTextarea(
-              e.currentTarget,
-              link.start
-            );
-
-            let textareaPosition = e.currentTarget.getBoundingClientRect();
-            setCursorCoordinates({
-              textIndex: link.start,
-              top:
-                coordinates.top +
-                textareaPosition.top +
-                document.documentElement.scrollTop +
-                coordinates.height,
-              left: coordinates.left + textareaPosition.left,
-            });
-          }
-
-          let previousStart = previousSelection.current?.start;
-          let previousEnd = previousSelection.current?.end;
-          action.add({
-            undo: () => {
-              textareaRef.current?.setSelectionRange(
-                previousStart || null,
-                previousEnd || null
+            let link = getLinkAtCursor(value, start);
+            suggestions.setSuggestionPrefix(link?.value);
+            if (!link) {
+              setCursorCoordinates(undefined);
+              suggestions.close();
+            }
+            if (link) {
+              let coordinates = getCoordinatesInTextarea(
+                e.currentTarget,
+                link.start
               );
-            },
-            redo: () => {
-              textareaRef.current?.setSelectionRange(start, end);
-            },
-          });
-          await mutate("assertFact", {
-            entity: props.entityID,
-            attribute: "block/content",
-            value: value,
-          });
-          previousSelection.current = { start, end };
-        }}
-      />
+
+              let textareaPosition = e.currentTarget.getBoundingClientRect();
+              setCursorCoordinates({
+                textIndex: link.start,
+                top:
+                  coordinates.top +
+                  textareaPosition.top +
+                  document.documentElement.scrollTop +
+                  coordinates.height,
+                left: coordinates.left + textareaPosition.left,
+              });
+            }
+
+            let previousStart = previousSelection.current?.start;
+            let previousEnd = previousSelection.current?.end;
+            action.add({
+              undo: () => {
+                textareaRef.current?.setSelectionRange(
+                  previousStart || null,
+                  previousEnd || null
+                );
+              },
+              redo: () => {
+                textareaRef.current?.setSelectionRange(start, end);
+              },
+            });
+            await mutate("assertFact", {
+              entity: props.entityID,
+              attribute: "block/content",
+              value: value,
+            });
+            previousSelection.current = { start, end };
+          }}
+        />
+        <ToggleOpen entityID={props.entityID} count={children.length} />
+      </div>
       <BlockChildren
         entityID={props.entityID}
         after={props.after}
@@ -149,6 +152,22 @@ export function Block(props: BlockProps) {
     </div>
   );
 }
+
+const ToggleOpen = (props: { entityID: string; count: number }) => {
+  let expanded = useOpenStates((s) => s.openStates[props.entityID]);
+  let setOpen = useOpenStates((s) => s.setOpen);
+  if (props.count === 0) return null;
+  return (
+    <button
+      className="w-fit text-xs italic "
+      onClick={() => {
+        setOpen(props.entityID, !expanded);
+      }}
+    >
+      ({props.count})
+    </button>
+  );
+};
 
 export function BlockChildren(props: {
   entityID: string;
@@ -159,26 +178,20 @@ export function BlockChildren(props: {
     .useReference(props.entityID, "block/parent")
     ?.sort(sortByPosition);
   let expanded = useOpenStates((s) => s.openStates[props.entityID]);
-  if (children?.length === 0) return null;
+  if (children?.length === 0 || !expanded) return null;
   return (
     <div className="flex flex-col gap-2 pt-2">
-      {!expanded ? (
-        <button className="w-fit text-sm italic underline">
-          {children.length} children
-        </button>
-      ) : (
-        children?.map((block, index) => (
-          <Block
-            factID={block.id}
-            before={children?.[index - 1]?.entity}
-            after={children?.[index + 1]?.entity || props.after}
-            key={block.entity}
-            entityID={block.entity}
-            parent={block.value.value}
-            depth={props.depth + 1}
-          />
-        ))
-      )}
+      {children?.map((block, index) => (
+        <Block
+          factID={block.id}
+          before={children?.[index - 1]?.entity}
+          after={children?.[index + 1]?.entity || props.after}
+          key={block.entity}
+          entityID={block.entity}
+          parent={block.value.value}
+          depth={props.depth + 1}
+        />
+      ))}
     </div>
   );
 }
