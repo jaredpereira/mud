@@ -114,6 +114,15 @@ export const useKeyboardHandling = (
             close();
             break;
           }
+          if (e.ctrlKey) {
+            useOpenStates.setState((s) => ({
+              openStates: {
+                ...s.openStates,
+                [entityID]: !s.openStates[entityID],
+              },
+            }));
+            break;
+          }
           if (!e.shiftKey) {
             e.preventDefault();
             let child = ulid();
