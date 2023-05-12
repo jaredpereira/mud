@@ -156,10 +156,10 @@ export function Block(props: BlockProps) {
 const ToggleOpen = (props: { entityID: string; count: number }) => {
   let expanded = useOpenStates((s) => s.openStates[props.entityID]);
   let setOpen = useOpenStates((s) => s.setOpen);
-  if (props.count === 0) return null;
+  if (props.count === 0) return <div className="w-min-[3ch]" />;
   return (
     <button
-      className="w-fit text-xs italic "
+      className="w-fit self-start pt-1 text-xs italic"
       onClick={() => {
         setOpen(props.entityID, !expanded);
       }}
