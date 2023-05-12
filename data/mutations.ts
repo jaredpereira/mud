@@ -89,9 +89,15 @@ const updateFact: Mutation<{
 };
 
 const deleteBlock: Mutation<{ entity: string }> = async (args, ctx) => {
-  let references = await ctx.scanIndex.vae(args.entity);
-  let facts = await ctx.scanIndex.eav(args.entity, null);
-  await Promise.all(facts.concat(references).map((f) => ctx.retractFact(f.id)));
+  const deleteBlock = async (entityID: string) => {
+    let references = await ctx.scanIndex.vae(entityID);
+    let facts = await ctx.scanIndex.eav(entityID, null);
+    await Promise.all(
+      facts.concat(references).map((f) => ctx.retractFact(f.id))
+    );
+    await Promise.all(references.map((r) => deleteBlock(r.entity)));
+  };
+  await deleteBlock(args.entity);
 };
 
 const addChildBlock: Mutation<{
@@ -131,7 +137,6 @@ const indentBlock: Mutation<{ entityID: string; factID: string }> = async (
     await ctx.scanIndex.vae(parent.value.value, "block/parent")
   ).sort(sortByPosition);
   let position = siblings.findIndex((s) => s.entity === args.entityID);
-  console.log({ position, parent, siblings });
   if (position < 1) return;
   let newParent = siblings[position - 1].entity;
   let newSiblings = (await ctx.scanIndex.vae(newParent, "block/parent")).sort(

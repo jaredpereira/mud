@@ -322,7 +322,16 @@ export const useKeyboardHandling = (
             break;
           }
           if (value === "") {
-            mutate("deleteBlock", { entity: entityID });
+            e.preventDefault();
+            action.start();
+            action.add({
+              undo: async () => {
+                document.getElementById(entityID)?.focus();
+              },
+              redo: () => {},
+            });
+            await mutate("deleteBlock", { entity: entityID });
+            action.end();
             let id: string;
             if (deps.before) {
               let before = deps.before;
