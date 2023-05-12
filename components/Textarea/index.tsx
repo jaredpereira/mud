@@ -88,9 +88,7 @@ export const Textarea = (
             if (!range || !previewElement.current) return;
             if (range.startContainer !== range.endContainer) return;
             let length = range.toString().length;
-            console.log(length);
             range.setStart(previewElement.current, 0);
-            console.log(range.toString());
             let end = range.toString().length;
             let start = end - length;
 

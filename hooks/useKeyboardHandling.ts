@@ -86,7 +86,6 @@ export const useKeyboardHandling = (
       switch (e.key) {
         case "Escape": {
           if (suggestions.length > 0) {
-            console.log(suggestions);
             e.preventDefault();
             close();
           }
