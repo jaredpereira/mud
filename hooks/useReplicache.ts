@@ -139,6 +139,8 @@ export const useMutations = () => {
       }) {
         rep?.undoManager.add(opts);
       },
+      undo: () => rep?.undoManager.undo(),
+      redo: () => rep?.undoManager.redo(),
     }),
     [rep?.undoManager]
   );

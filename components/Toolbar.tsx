@@ -20,12 +20,12 @@ export function Toolbar() {
 function ToolbarBase() {
   let { height } = useViewportSize();
   let focused = useFocusStore((s) => s.focused);
-  let { mutate } = useMutations();
+  let { mutate, action } = useMutations();
   let rep = useContext(ReplicacheContext)?.rep;
 
   return (
     <div
-      className="fixed flex h-6 w-full flex-row gap-2 border-t bg-background px-4"
+      className="fixed flex h-6 w-full flex-row gap-2 border-t border-b bg-background px-8"
       style={{ top: height - 24, left: 0 }}
     >
       <button
@@ -86,6 +86,21 @@ function ToolbarBase() {
         }}
       >
         down
+      </button>
+      <button
+        onClick={() => {
+          action.undo();
+        }}
+      >
+        undo
+      </button>
+
+      <button
+        onClick={() => {
+          action.redo();
+        }}
+      >
+        redo
       </button>
     </div>
   );
