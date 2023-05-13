@@ -51,6 +51,7 @@ function Blocks() {
       </button>
       {rootBlocks?.map((block, index) => (
         <Block
+          parentFocused={false}
           depth={1}
           factID={block.id}
           before={rootBlocks?.[index - 1]?.entity}

@@ -2,12 +2,14 @@ import { Autocomplete, useSuggestions } from "components/Autocomplete";
 import { Textarea } from "components/Textarea";
 import { useKeyboardHandling } from "hooks/useKeyboardHandling";
 import { db, useMutations } from "hooks/useReplicache";
+import { useUIState } from "hooks/useUIState";
 import { SyntheticEvent, useCallback, useRef, useState } from "react";
 import { getCoordinatesInTextarea } from "src/getCoordinatesInTextarea";
 import { useOpenStates } from "src/openStates";
 import { getLinkAtCursor, sortByPosition } from "src/utils";
 
 export type BlockProps = {
+  parentFocused: boolean;
   factID: string;
   entityID: string;
   parent: string;
@@ -32,7 +34,13 @@ export function Block(props: BlockProps) {
     cursorCoordinates,
     ...suggestions,
   });
-  let color = props.depth % 2 === 1 ? "bg-[#FFE4B5]" : "bg-[#FFF8DC]";
+  let inFocusMode = useUIState((s) => s.focusMode);
+  let focused = useUIState((s) => s.focused === props.entityID);
+  let childFocused = useUIState(
+    (s) => s.focused && children.find((child) => child.entity === s.focused)
+  );
+  let blurred =
+    inFocusMode && !focused && !props.parentFocused && !childFocused;
 
   const onSelect = useCallback(
     (e: SyntheticEvent<HTMLTextAreaElement>) => {
@@ -68,7 +76,15 @@ export function Block(props: BlockProps) {
   let textareaRef = useRef<HTMLTextAreaElement | null>(null);
   let timeout = useRef<null | number>(null);
   return (
-    <div className={`rounded-md border ${color} p-2 pr-1`}>
+    <div
+      style={{
+        borderColor: blurred ? "#00000040" : "#000000FF",
+        backgroundColor:
+          (props.depth % 2 === 1 ? "#FFE4B5" : "#FFF8DC") +
+          (blurred ? "40" : "FF"),
+      }}
+      className={`rounded-md border p-2 pr-1 `}
+    >
       {cursorCoordinates && suggestions.suggestionPrefix && (
         <Autocomplete
           {...suggestions}
@@ -82,7 +98,10 @@ export function Block(props: BlockProps) {
           textareaRef={textareaRef}
           onSelect={onSelect}
           onKeyDown={onKeyDown}
-          className={`h-full min-h-[24px] w-full bg-inherit`}
+          className={`h-full min-h-[24px] w-full bg-inherit ${
+            blurred ? "opacity-25" : ""
+          }
+          `}
           value={content?.value || ""}
           onChange={async (e) => {
             if (!timeout.current) action.start();
@@ -145,6 +164,7 @@ export function Block(props: BlockProps) {
         <ToggleOpen entityID={props.entityID} count={children.length} />
       </div>
       <BlockChildren
+        parentFocused={props.parentFocused || focused}
         entityID={props.entityID}
         after={props.after}
         depth={props.depth}
@@ -170,6 +190,7 @@ const ToggleOpen = (props: { entityID: string; count: number }) => {
 };
 
 export function BlockChildren(props: {
+  parentFocused: boolean;
   entityID: string;
   after?: string;
   depth: number;
@@ -183,6 +204,7 @@ export function BlockChildren(props: {
     <div className="flex flex-col gap-2 pt-2">
       {children?.map((block, index) => (
         <Block
+          parentFocused={props.parentFocused}
           factID={block.id}
           before={children?.[index - 1]?.entity}
           after={children?.[index + 1]?.entity || props.after}

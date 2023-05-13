@@ -1,17 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import AutosizeTextarea from "./AutosizeTextarea";
 import { RenderedText } from "./RenderedText";
-import { create } from "zustand";
-
-export let useFocusStore = create<{
-  mode: "edit" | "normal";
-  focused: undefined | string;
-  setFocused: (entity: string | undefined) => void;
-}>((set) => ({
-  mode: "normal",
-  focused: undefined,
-  setFocused: (id: string | undefined) => set({ focused: id }),
-}));
+import { useUIState } from "hooks/useUIState";
 
 export const Textarea = (
   props: {
@@ -28,8 +18,8 @@ export const Textarea = (
   let textarea = useRef<HTMLTextAreaElement | null>(null);
   let previewElement = useRef<HTMLPreElement | null>(null);
   let ignoreFocus = useRef(false);
-  let focused = useFocusStore((s) => s.focused === props.id);
-  let setFocused = useFocusStore((s) => s.setFocused);
+  let focused = useUIState((s) => s.focused === props.id);
+  let setFocused = useUIState((s) => s.setFocused);
 
   let [initialCursor, setInitialCursor] = useState<[number, number] | null>(
     null

@@ -4,7 +4,7 @@ import { useContext } from "react";
 import { getPreviousSibling, useOpenStates } from "src/openStates";
 import { ulid } from "src/ulid";
 import { ReplicacheContext } from "./ReplicacheProvider";
-import { useFocusStore } from "./Textarea";
+import { useUIState } from "hooks/useUIState";
 
 export function Toolbar() {
   let { width } = useWindowDimensions();
@@ -19,7 +19,8 @@ export function Toolbar() {
 
 function ToolbarBase() {
   let { height } = useViewportSize();
-  let focused = useFocusStore((s) => s.focused);
+  let focused = useUIState((s) => s.focused);
+  let focusMode = useUIState((s) => s.focusMode);
   let { mutate, action } = useMutations();
   let rep = useContext(ReplicacheContext)?.rep;
 
@@ -101,6 +102,14 @@ function ToolbarBase() {
         }}
       >
         redo
+      </button>
+
+      <button
+        onClick={() => {
+          useUIState.setState((s) => ({ focusMode: !s.focusMode }));
+        }}
+      >
+        {focusMode ? "focus" : "unfocus"}
       </button>
     </div>
   );

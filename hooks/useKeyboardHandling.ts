@@ -5,6 +5,7 @@ import { useCallback, useContext } from "react";
 import { getLastOpenChild, useOpenStates } from "src/openStates";
 import { ulid } from "src/ulid";
 import { useMutations } from "./useReplicache";
+import { useUIState } from "./useUIState";
 
 export const useKeyboardHandling = (
   deps: {
@@ -285,6 +286,14 @@ export const useKeyboardHandling = (
           }
           break;
         }
+        case "f": {
+          if (e.ctrlKey) {
+            e.preventDefault();
+            useUIState.setState((s) => ({ ...s, focusMode: !s.focusMode }));
+          }
+          break;
+        }
+
         case "Backspace": {
           if (
             value[start - 1] === "*" &&
