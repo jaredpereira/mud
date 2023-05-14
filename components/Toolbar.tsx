@@ -1,7 +1,6 @@
 import { useMutations } from "hooks/useReplicache";
 import useWindowDimensions, { useViewportSize } from "hooks/window";
 import { useContext } from "react";
-import { getPreviousSibling, useOpenStates } from "src/openStates";
 import { ulid } from "src/ulid";
 import { ReplicacheContext } from "./ReplicacheProvider";
 import { useUIState } from "hooks/useUIState";
@@ -13,6 +12,9 @@ import {
   RightArrow,
   UpArrow,
 } from "./Icons";
+import { ReadTransaction } from "replicache";
+import { scanIndex } from "src/replicache";
+import { sortByPosition } from "src/utils";
 
 export function Toolbar() {
   let { width } = useWindowDimensions();
@@ -56,7 +58,7 @@ function ToolbarBase() {
           );
           if (previousSibling) {
             let sib = previousSibling;
-            useOpenStates.setState((s) => ({
+            useUIState.setState((s) => ({
               openStates: {
                 ...s.openStates,
                 [sib]: true,
@@ -130,3 +132,18 @@ const withPreserveFocus = async (entityID: string, fn: () => Promise<void>) => {
   el?.focus();
   if (start && end) el?.setSelectionRange(start, end);
 };
+
+export async function getPreviousSibling(
+  tx: ReadTransaction,
+  entityID: string
+) {
+  let parent = await scanIndex(tx).eav(entityID, "block/parent");
+  if (!parent) return;
+
+  let siblings = (
+    await scanIndex(tx).vae(parent.value.value, "block/parent")
+  ).sort(sortByPosition);
+  let position = siblings.findIndex((s) => s.entity === entityID);
+  if (position < 1) return;
+  return siblings[position - 1].entity;
+}

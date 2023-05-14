@@ -5,7 +5,6 @@ import { db, useMutations } from "hooks/useReplicache";
 import { useUIState } from "hooks/useUIState";
 import { SyntheticEvent, useCallback, useRef, useState } from "react";
 import { getCoordinatesInTextarea } from "src/getCoordinatesInTextarea";
-import { useOpenStates } from "src/openStates";
 import { getLinkAtCursor, sortByPosition } from "src/utils";
 
 export type BlockProps = {
@@ -174,8 +173,8 @@ export function Block(props: BlockProps) {
 }
 
 const ToggleOpen = (props: { entityID: string; count: number }) => {
-  let expanded = useOpenStates((s) => s.openStates[props.entityID]);
-  let setOpen = useOpenStates((s) => s.setOpen);
+  let expanded = useUIState((s) => s.openStates[props.entityID]);
+  let setOpen = useUIState((s) => s.setOpen);
   if (props.count === 0) return <div className="w-min-[3ch]" />;
   return (
     <button
@@ -198,7 +197,7 @@ export function BlockChildren(props: {
   let children = db
     .useReference(props.entityID, "block/parent")
     ?.sort(sortByPosition);
-  let expanded = useOpenStates((s) => s.openStates[props.entityID]);
+  let expanded = useUIState((s) => s.openStates[props.entityID]);
   if (children?.length === 0 || !expanded) return null;
   return (
     <div className="flex flex-col gap-2 pt-2">

@@ -2,10 +2,9 @@ import { BlockProps } from "components/Block";
 import { ReplicacheContext } from "components/ReplicacheProvider";
 import { Fact } from "data/Facts";
 import { useCallback, useContext } from "react";
-import { getLastOpenChild, useOpenStates } from "src/openStates";
 import { ulid } from "src/ulid";
 import { useMutations } from "./useReplicache";
-import { useUIState } from "./useUIState";
+import { getLastOpenChild, useUIState } from "./useUIState";
 
 export const useKeyboardHandling = (
   deps: {
@@ -115,7 +114,7 @@ export const useKeyboardHandling = (
             break;
           }
           if (e.ctrlKey) {
-            useOpenStates.setState((s) => ({
+            useUIState.setState((s) => ({
               openStates: {
                 ...s.openStates,
                 [entityID]: !s.openStates[entityID],
@@ -153,7 +152,7 @@ export const useKeyboardHandling = (
             } else {
               if (!deps.before) break;
               let before = deps.before;
-              useOpenStates.setState((s) => ({
+              useUIState.setState((s) => ({
                 openStates: {
                   ...s.openStates,
                   [before]: true,
@@ -263,10 +262,7 @@ export const useKeyboardHandling = (
             break;
           } else {
             e.preventDefault();
-            if (
-              deps.firstChild &&
-              useOpenStates.getState().openStates[entityID]
-            )
+            if (deps.firstChild && useUIState.getState().openStates[entityID])
               document.getElementById(deps.firstChild)?.focus();
             else if (deps.after) document.getElementById(deps.after)?.focus();
           }
@@ -275,14 +271,14 @@ export const useKeyboardHandling = (
         case "o": {
           if (e.ctrlKey) {
             e.preventDefault();
-            useOpenStates.getState().setOpen(entityID, true);
+            useUIState.getState().setOpen(entityID, true);
           }
           break;
         }
         case "c": {
           if (e.ctrlKey) {
             e.preventDefault();
-            useOpenStates.getState().setOpen(entityID, false);
+            useUIState.getState().setOpen(entityID, false);
           }
           break;
         }
