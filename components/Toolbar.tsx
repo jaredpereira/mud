@@ -76,9 +76,12 @@ function ToolbarBase() {
       <button
         onClick={() => {
           if (!focused) return;
-          mutate("moveBlockUp", {
-            entityID: focused,
-          });
+          let entityID = focused;
+          withPreserveFocus(focused, async () =>
+            mutate("moveBlockUp", {
+              entityID,
+            })
+          );
         }}
       >
         <UpArrow />
@@ -87,9 +90,14 @@ function ToolbarBase() {
       <button
         onClick={() => {
           if (!focused) return;
-          mutate("moveBlockDown", {
-            entityID: focused,
-          });
+
+          if (!focused) return;
+          let entityID = focused;
+          withPreserveFocus(focused, async () =>
+            mutate("moveBlockDown", {
+              entityID,
+            })
+          );
         }}
       >
         <DownArrow />
@@ -112,3 +120,13 @@ function ToolbarBase() {
     </div>
   );
 }
+
+const withPreserveFocus = async (entityID: string, fn: () => Promise<void>) => {
+  let el = document.getElementById(entityID) as HTMLTextAreaElement | undefined;
+  let start = el?.selectionStart;
+  let end = el?.selectionEnd;
+  await fn();
+  el = document.getElementById(entityID) as HTMLTextAreaElement | undefined;
+  el?.focus();
+  if (start && end) el?.setSelectionRange(start, end);
+};
