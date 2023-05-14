@@ -15,6 +15,10 @@ export const Textarea = (
     ): void;
   } & Omit<JSX.IntrinsicElements["textarea"], "onKeyDown">
 ) => {
+  let [value, setValue] = useState(props.value as string);
+  useEffect(() => {
+    setValue(props.value as string);
+  }, [props.value]);
   let textarea = useRef<HTMLTextAreaElement | null>(null);
   let previewElement = useRef<HTMLPreElement | null>(null);
   let ignoreFocus = useRef(false);
@@ -42,7 +46,7 @@ export const Textarea = (
     return (
       <RenderedText
         {...(newProps as JSX.IntrinsicElements["pre"])}
-        text={props.value}
+        text={value}
         ref={previewElement}
         tabIndex={0}
         style={{
@@ -60,8 +64,8 @@ export const Textarea = (
             if (e.isDefaultPrevented()) return;
             if (props.previewOnly) return;
             setFocused(props.id);
-            if (typeof props.value === "string")
-              setInitialCursor([props.value?.length, props.value?.length]);
+            if (typeof value === "string")
+              setInitialCursor([value?.length, value?.length]);
           }
         }}
         onTouchStart={() => {
@@ -73,7 +77,7 @@ export const Textarea = (
         onClick={(e) => {
           if (e.isDefaultPrevented()) return;
           if (props.previewOnly) return;
-          if (props.value) {
+          if (value) {
             let range = window.getSelection()?.getRangeAt(0);
             if (!range || !previewElement.current) return;
             if (range.startContainer !== range.endContainer) return;
@@ -92,6 +96,7 @@ export const Textarea = (
   return (
     <AutosizeTextarea
       {...newProps}
+      value={value}
       spellCheck={false}
       className={`dontundo ${props.className}`}
       onKeyDown={(e) => {
@@ -100,16 +105,8 @@ export const Textarea = (
       }}
       onChange={async (e) => {
         if (!props.onChange) return;
-        let start = e.currentTarget.selectionStart,
-          end = e.currentTarget.selectionEnd;
+        setValue(e.currentTarget.value);
         await Promise.all([props.onChange(e)]);
-        requestAnimationFrame(() => {
-          if (
-            textarea.current?.selectionStart !== start ||
-            textarea.current.selectionEnd !== end
-          )
-            textarea.current?.setSelectionRange(start, end);
-        });
       }}
       onBlur={(e) => {
         props.onBlur?.(e);
