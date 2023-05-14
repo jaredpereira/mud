@@ -6,7 +6,7 @@ export let useUIState = create<{
   setFocused: (entity: string | undefined) => void;
 }>((set) => ({
   mode: "normal",
-  focusMode: true,
+  focusMode: false,
   focused: undefined,
   setFocused: (id: string | undefined) => set({ focused: id }),
 }));

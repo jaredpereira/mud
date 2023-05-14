@@ -286,13 +286,6 @@ export const useKeyboardHandling = (
           }
           break;
         }
-        case "f": {
-          if (e.ctrlKey) {
-            e.preventDefault();
-            useUIState.setState((s) => ({ ...s, focusMode: !s.focusMode }));
-          }
-          break;
-        }
 
         case "Backspace": {
           if (

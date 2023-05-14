@@ -1,4 +1,5 @@
 import { Block } from "components/Block";
+import { Header } from "components/Header";
 import { SpaceProvider } from "components/ReplicacheProvider";
 import { Toolbar } from "components/Toolbar";
 import { db, useMutations } from "hooks/useReplicache";
@@ -15,6 +16,7 @@ export default function StudioPage() {
       </Head>
       {!query.space ? null : (
         <SpaceProvider id={query.space as string}>
+          <Header />
           <Blocks />
           <Toolbar />
         </SpaceProvider>
