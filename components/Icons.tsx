@@ -7,7 +7,6 @@ export const RightArrow = () => (
     viewBox="743.73 381.88 155.94 104.82"
     strokeLinecap="round"
     strokeLinejoin="round"
-    style={{ backgroundColor: "rgb(249, 250, 251)" }}
   >
     <defs>
       <mask id="hash_pattern_mask">
@@ -54,7 +53,6 @@ export const LeftArrow = () => (
     viewBox="680.60 357.83 228.58 167.96"
     strokeLinecap="round"
     strokeLinejoin="round"
-    style={{ backgroundColor: "rgb(249, 250, 251)" }}
   >
     <defs>
       <mask id="hash_pattern_mask">
@@ -101,7 +99,6 @@ export const UpArrow = () => (
     viewBox="730.20 340.54 149.67 160.2"
     strokeLinecap="round"
     strokeLinejoin="round"
-    style={{ backgroundColor: "rgb(249, 250, 251)" }}
   >
     <defs>
       <mask id="hash_pattern_mask">
@@ -148,7 +145,6 @@ export const DownArrow = () => (
     viewBox="729.20 390.65 120.11 154.93"
     strokeLinecap="round"
     strokeLinejoin="round"
-    style={{ backgroundColor: "rgb(249, 250, 251)" }}
   >
     <defs>
       <mask id="hash_pattern_mask">
@@ -195,7 +191,6 @@ export const CounterClockwiseArrow = () => (
     viewBox="731.20 376.12 152.68 171.96"
     strokeLinecap="round"
     strokeLinejoin="round"
-    style={{ backgroundColor: "rgb(249, 250, 251)" }}
   >
     <defs>
       <mask id="hash_pattern_mask">
@@ -242,7 +237,6 @@ export const ClockwiseArrow = () => (
     viewBox="712.91 361.84 159.18 182.98"
     strokeLinecap="round"
     strokeLinejoin="round"
-    style={{ backgroundColor: "rgb(249, 250, 251)" }}
   >
     <defs>
       <mask id="hash_pattern_mask">
