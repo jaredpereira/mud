@@ -5,7 +5,7 @@ export const Header = () => {
     <>
       <div className="h-6" />
       <div
-        className="fixed m-auto flex h-6 w-full flex-row justify-end gap-2 border-b bg-background px-8 "
+        className="fixed z-10 m-auto flex h-6 w-full flex-row justify-end gap-2 border-b bg-background px-8"
         style={{ top: 0, left: 0 }}
       >
         <button
