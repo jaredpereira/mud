@@ -39,8 +39,9 @@ function ToolbarBase() {
       style={{ top: height - 24, left: 0 }}
     >
       <button
-        onClick={() => {
+        onPointerDown={(e) => {
           if (!focused) return;
+          e.preventDefault();
           mutate("outdentBlock", {
             entityID: focused,
             factID: ulid(),
@@ -50,8 +51,9 @@ function ToolbarBase() {
         <LeftArrow />
       </button>
       <button
-        onClick={async () => {
+        onPointerDown={async (e) => {
           if (!focused || !rep) return;
+          e.preventDefault();
           let entityID = focused;
           let previousSibling = await rep.query((tx) =>
             getPreviousSibling(tx, entityID)
@@ -76,36 +78,31 @@ function ToolbarBase() {
       </button>
 
       <button
-        onClick={() => {
+        onPointerDown={(e) => {
           if (!focused) return;
-          let entityID = focused;
-          withPreserveFocus(focused, async () =>
-            mutate("moveBlockUp", {
-              entityID,
-            })
-          );
+          e.preventDefault();
+          mutate("moveBlockUp", {
+            entityID: focused,
+          });
         }}
       >
         <UpArrow />
       </button>
 
       <button
-        onClick={() => {
+        onPointerDown={(e) => {
+          e.preventDefault();
           if (!focused) return;
-
-          if (!focused) return;
-          let entityID = focused;
-          withPreserveFocus(focused, async () =>
-            mutate("moveBlockDown", {
-              entityID,
-            })
-          );
+          mutate("moveBlockDown", {
+            entityID: focused,
+          });
         }}
       >
         <DownArrow />
       </button>
       <button
-        onClick={() => {
+        onPointerDown={(e) => {
+          e.preventDefault();
           action.undo();
         }}
       >
@@ -113,7 +110,8 @@ function ToolbarBase() {
       </button>
 
       <button
-        onClick={() => {
+        onPointerDown={(e) => {
+          e.preventDefault();
           action.redo();
         }}
       >
@@ -122,16 +120,6 @@ function ToolbarBase() {
     </div>
   );
 }
-
-const withPreserveFocus = async (entityID: string, fn: () => Promise<void>) => {
-  let el = document.getElementById(entityID) as HTMLTextAreaElement | undefined;
-  let start = el?.selectionStart;
-  let end = el?.selectionEnd;
-  await fn();
-  el = document.getElementById(entityID) as HTMLTextAreaElement | undefined;
-  el?.focus();
-  if (start && end) el?.setSelectionRange(start, end);
-};
 
 export async function getPreviousSibling(
   tx: ReadTransaction,
