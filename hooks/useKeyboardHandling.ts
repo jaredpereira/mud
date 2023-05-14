@@ -131,9 +131,8 @@ export const useKeyboardHandling = (
               after: entityID,
               child,
             });
-            requestAnimationFrame(() => {
-              document.getElementById(child)?.focus();
-            })
+            useUIState.setState(() => ({ focused: child }));
+            document.getElementById(child)?.focus();
             break;
           }
           break;
