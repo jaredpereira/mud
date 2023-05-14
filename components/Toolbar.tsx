@@ -5,6 +5,14 @@ import { getPreviousSibling, useOpenStates } from "src/openStates";
 import { ulid } from "src/ulid";
 import { ReplicacheContext } from "./ReplicacheProvider";
 import { useUIState } from "hooks/useUIState";
+import {
+  ClockwiseArrow,
+  CounterClockwiseArrow,
+  DownArrow,
+  LeftArrow,
+  RightArrow,
+  UpArrow,
+} from "./Icons";
 
 export function Toolbar() {
   let { width } = useWindowDimensions();
@@ -20,15 +28,25 @@ export function Toolbar() {
 function ToolbarBase() {
   let { height } = useViewportSize();
   let focused = useUIState((s) => s.focused);
-  let focusMode = useUIState((s) => s.focusMode);
   let { mutate, action } = useMutations();
   let rep = useContext(ReplicacheContext)?.rep;
 
   return (
     <div
-      className="fixed flex h-6 w-full flex-row gap-2 border-t border-b bg-background px-8"
+      className="fixed flex h-6 w-full flex-row justify-between gap-4 border-t border-b bg-background px-8"
       style={{ top: height - 24, left: 0 }}
     >
+      <button
+        onClick={() => {
+          if (!focused) return;
+          mutate("outdentBlock", {
+            entityID: focused,
+            factID: ulid(),
+          });
+        }}
+      >
+        <LeftArrow />
+      </button>
       <button
         onClick={async () => {
           if (!focused || !rep) return;
@@ -52,19 +70,7 @@ function ToolbarBase() {
           });
         }}
       >
-        indent
-      </button>
-
-      <button
-        onClick={() => {
-          if (!focused) return;
-          mutate("outdentBlock", {
-            entityID: focused,
-            factID: ulid(),
-          });
-        }}
-      >
-        outdent
+        <RightArrow />
       </button>
 
       <button
@@ -75,7 +81,7 @@ function ToolbarBase() {
           });
         }}
       >
-        up
+        <UpArrow />
       </button>
 
       <button
@@ -86,14 +92,14 @@ function ToolbarBase() {
           });
         }}
       >
-        down
+        <DownArrow />
       </button>
       <button
         onClick={() => {
           action.undo();
         }}
       >
-        undo
+        <CounterClockwiseArrow />
       </button>
 
       <button
@@ -101,15 +107,7 @@ function ToolbarBase() {
           action.redo();
         }}
       >
-        redo
-      </button>
-
-      <button
-        onClick={() => {
-          useUIState.setState((s) => ({ focusMode: !s.focusMode }));
-        }}
-      >
-        {focusMode ? "focus" : "unfocus"}
+        <ClockwiseArrow />
       </button>
     </div>
   );
