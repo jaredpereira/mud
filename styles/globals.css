@@ -118,6 +118,11 @@ textarea {
   @apply box-border !important;
 }
 
+button {
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
 ::placeholder {
   @apply !text-grey-80;
   @apply italic;
