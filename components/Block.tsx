@@ -6,6 +6,7 @@ import { useUIState } from "hooks/useUIState";
 import { SyntheticEvent, useCallback, useRef, useState } from "react";
 import { getCoordinatesInTextarea } from "src/getCoordinatesInTextarea";
 import { getLinkAtCursor, sortByPosition } from "src/utils";
+import { Caret } from "./Icons";
 
 export type BlockProps = {
   parentFocused: boolean;
@@ -178,12 +179,13 @@ const ToggleOpen = (props: { entityID: string; count: number }) => {
   if (props.count === 0) return <div className="w-min-[3ch]" />;
   return (
     <button
-      className="w-fit self-start pt-1 text-xs italic"
+      style={{ transform: !expanded ? "rotate(-90deg)" : "rotate(0deg" }}
+      className="w-fit self-start pt-1 pr-1 text-xs italic"
       onClick={() => {
         setOpen(props.entityID, !expanded);
       }}
     >
-      ({props.count})
+      <Caret />
     </button>
   );
 };
@@ -200,7 +202,7 @@ export function BlockChildren(props: {
   let expanded = useUIState((s) => s.openStates[props.entityID]);
   if (children?.length === 0 || !expanded) return null;
   return (
-    <div className="flex flex-col gap-2 pt-2">
+    <div className="flex flex-col gap-2 pt-2 pl-1">
       {children?.map((block, index) => (
         <Block
           parentFocused={props.parentFocused}
