@@ -16,24 +16,6 @@ export const Header = () => {
         className="fixed z-10 m-auto flex h-6 w-full flex-row justify-between gap-2 border-b bg-background pl-2 pr-6"
         style={{ top: 0, left: 0 }}
       >
-        {root ? (
-          <button
-            onClick={async (e) => {
-              if (!root || !rep) return;
-              console.log(e.detail);
-              let parent = await rep.query((tx) =>
-                root ? scanIndex(tx).eav(root, "block/parent") : undefined
-              );
-              if (parent && parent.value.value === home?.entity)
-                useUIState.setState({ root: undefined });
-              else useUIState.setState({ root: parent?.value.value });
-            }}
-          >
-            back
-          </button>
-        ) : (
-          <div />
-        )}
         <button
           onClick={async () => {
             if (!rep) return;

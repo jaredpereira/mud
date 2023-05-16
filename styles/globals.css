@@ -119,6 +119,7 @@ textarea {
 }
 
 button {
+  font-style: inherit;
   outline: none;
   -webkit-tap-highlight-color: transparent;
 }
@@ -126,4 +127,15 @@ button {
 ::placeholder {
   @apply !text-grey-80;
   @apply italic;
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+.no-scrollbar {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
 }
