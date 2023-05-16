@@ -18,8 +18,15 @@ export const Header = () => {
       >
         {root ? (
           <button
-            onClick={() => {
-              useUIState.setState(() => ({ root: undefined }));
+            onClick={async (e) => {
+              if (!root || !rep) return;
+              console.log(e.detail);
+              let parent = await rep.query((tx) =>
+                root ? scanIndex(tx).eav(root, "block/parent") : undefined
+              );
+              if (parent && parent.value.value === home?.entity)
+                useUIState.setState({ root: undefined });
+              else useUIState.setState({ root: parent?.value.value });
             }}
           >
             back

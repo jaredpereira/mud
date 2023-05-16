@@ -263,9 +263,34 @@ export const useKeyboardHandling = (
             break;
           } else {
             e.preventDefault();
-            if (deps.firstChild && useUIState.getState().openStates[entityID])
+            if (
+              deps.firstChild &&
+              (useUIState.getState().openStates[entityID] ||
+                useUIState.getState().root === entityID)
+            )
               document.getElementById(deps.firstChild)?.focus();
             else if (deps.after) document.getElementById(deps.after)?.focus();
+          }
+          break;
+        }
+        case ":": {
+          if (e.ctrlKey) {
+            e.preventDefault();
+            useUIState.setState({ root: entityID });
+            keepFocus();
+          }
+          break;
+        }
+
+        case "H": {
+          if (e.ctrlKey) {
+            e.preventDefault();
+            let root = useUIState.getState().root;
+            if (root === entityID) {
+              useUIState.setState({ root: parent });
+              keepFocus();
+            }
+            document.getElementById(deps.parent)?.focus();
           }
           break;
         }
