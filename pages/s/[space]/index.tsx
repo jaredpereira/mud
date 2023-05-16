@@ -61,6 +61,7 @@ const RootBlock = (props: { entityID: string; firstchild?: string }) => {
   return (
     parent && (
       <BlockContent
+        isRoot
         firstChild={props.firstchild}
         entityID={props.entityID}
         factID={parent.id}

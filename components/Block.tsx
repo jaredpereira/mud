@@ -9,6 +9,7 @@ import { getLinkAtCursor, sortByPosition } from "src/utils";
 import { Caret } from "./Icons";
 
 export type BlockProps = {
+  isRoot?: boolean;
   parentFocused: boolean;
   factID: string;
   entityID: string;

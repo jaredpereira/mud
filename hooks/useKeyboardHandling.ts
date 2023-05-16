@@ -127,7 +127,7 @@ export const useKeyboardHandling = (
             let child = ulid();
             await mutate("addChildBlock", {
               factID: ulid(),
-              parent: parent,
+              parent: deps.isRoot ? entityID : parent,
               after: entityID,
               child,
             });
