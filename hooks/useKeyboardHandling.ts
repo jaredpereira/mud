@@ -329,6 +329,10 @@ export const useKeyboardHandling = (
               redo: () => {},
             });
             await mutate("deleteBlock", { entity: entityID });
+            useUIState.setState((s) => {
+              if (s.root === entityID) return { root: undefined };
+              return {};
+            });
             action.end();
             let id: string;
             if (deps.before) {

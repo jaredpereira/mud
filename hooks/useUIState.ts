@@ -6,10 +6,12 @@ export let useUIState = create<{
   mode: "edit" | "normal";
   focused: undefined | string;
   focusMode: boolean;
+  root: undefined | string;
   openStates: { [key: string]: boolean };
   setOpen: (entity: string, open: boolean) => void;
   setFocused: (entity: string | undefined) => void;
 }>((set) => ({
+  root: undefined,
   openStates: {},
   mode: "normal",
   focusMode: false,

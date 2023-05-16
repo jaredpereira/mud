@@ -1,11 +1,11 @@
-import { Block } from "components/Block";
+import { Block, BlockContent } from "components/Block";
 import { Header } from "components/Header";
 import { SpaceProvider } from "components/ReplicacheProvider";
 import { Toolbar } from "components/Toolbar";
 import { db, useMutations } from "hooks/useReplicache";
+import { useUIState } from "hooks/useUIState";
 import Head from "next/head";
 import { useRouter } from "next/router";
-import { ulid } from "src/ulid";
 
 export default function StudioPage() {
   let { query } = useRouter();
@@ -26,10 +26,10 @@ export default function StudioPage() {
 }
 
 function Blocks() {
-  let { mutate } = useMutations();
   let home = db.useAttribute("home")[0];
+  let root = useUIState((s) => s.root);
   let rootBlocks = db
-    .useReference(home?.entity, "block/parent")
+    .useReference(root || home?.entity, "block/parent")
     ?.sort((a, b) => {
       let aPosition = a.value.position,
         bPosition = b.value.position;
@@ -38,19 +38,7 @@ function Blocks() {
     });
   return (
     <div className="flex flex-col gap-3">
-      <button
-        onClick={() => {
-          if (!home) return;
-          mutate("addChildBlock", {
-            factID: ulid(),
-            parent: home.entity,
-            child: ulid(),
-            before: rootBlocks?.[0]?.entity || "",
-          });
-        }}
-      >
-        new
-      </button>
+      {root && <RootBlock entityID={root} firstchild={rootBlocks[0]?.entity} />}
       {rootBlocks?.map((block, index) => (
         <Block
           parentFocused={false}
@@ -66,3 +54,21 @@ function Blocks() {
     </div>
   );
 }
+
+const RootBlock = (props: { entityID: string; firstchild?: string }) => {
+  let parent = db.useEntity(props.entityID, "block/parent");
+
+  return (
+    parent && (
+      <BlockContent
+        firstChild={props.firstchild}
+        entityID={props.entityID}
+        factID={parent.id}
+        parent={parent.value.value}
+        depth={0}
+        parentFocused={false}
+        blurred={false}
+      />
+    )
+  );
+};
