@@ -12,7 +12,7 @@ export const Header = () => {
   let { mutate, rep } = useMutations();
   return (
     <>
-      <div className="h-6" />
+      <div className="h-6 p-4" />
       <div className="fixed z-10 h-6 w-full p-2" style={{ top: 0, left: 0 }}>
         <div className="m-auto max-w-3xl  pl-2 pr-6">
           <div className="flex flex-row justify-between gap-2 border-b bg-background">
@@ -45,11 +45,14 @@ export const Header = () => {
             >
               <Plus />
             </button>
-            {focused && (
-              <button onClick={() => useUIState.setState({ root: focused })}>
+            {
+              <button
+                onClick={() => useUIState.getState().setRoot(focused)}
+                className={!focused ? "opacity-0" : ""}
+              >
                 zooom
               </button>
-            )}
+            }
           </div>
         </div>
       </div>

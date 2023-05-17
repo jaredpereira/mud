@@ -8,9 +8,13 @@ import Head from "next/head";
 import { useRouter } from "next/router";
 import { useSubscribe } from "hooks/useSubscribe";
 import { scanIndex } from "src/replicache";
+import { useEffect } from "react";
 
 export default function StudioPage() {
   let { query } = useRouter();
+  useEffect(() => {
+    useUIState.setState({ root: query.root as string });
+  }, [query.root]);
   return (
     <>
       <Head>
@@ -108,7 +112,7 @@ const BreadCrumbs = (props: { entityID: string }) => {
 
         <button
           className="hover:underline"
-          onClick={() => useUIState.setState({ root: undefined })}
+          onClick={() => useUIState.getState().setRoot(undefined)}
         >
           root
         </button>
@@ -122,7 +126,7 @@ const Crumb = (props: { entityID: string }) => {
   return (
     <button
       className="whitespace-nowrap hover:underline"
-      onClick={() => useUIState.setState({ root: props.entityID })}
+      onClick={() => useUIState.getState().setRoot(props.entityID)}
     >
       {content?.value.slice(0, 32)}
       {content && content.value.length > 32 && "..."}

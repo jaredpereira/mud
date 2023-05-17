@@ -2,6 +2,7 @@ import { BlockProps } from "components/Block";
 import { ReplicacheContext } from "components/ReplicacheProvider";
 import { Fact } from "data/Facts";
 import { useCallback, useContext } from "react";
+import { scanIndex } from "src/replicache";
 import { ulid } from "src/ulid";
 import { useMutations } from "./useReplicache";
 import { getLastOpenChild, useUIState } from "./useUIState";
@@ -276,7 +277,7 @@ export const useKeyboardHandling = (
         case ":": {
           if (e.ctrlKey) {
             e.preventDefault();
-            useUIState.setState({ root: entityID });
+            useUIState.getState().setRoot(entityID);
             keepFocus();
           }
           break;
@@ -287,7 +288,13 @@ export const useKeyboardHandling = (
             e.preventDefault();
             let root = useUIState.getState().root;
             if (root === entityID) {
-              useUIState.setState({ root: parent });
+              if (
+                parent ===
+                (await rep?.query((tx) => scanIndex(tx).aev("home")))?.[0]
+                  ?.entity
+              )
+                useUIState.getState().setRoot(undefined);
+              else useUIState.getState().setRoot(parent);
               keepFocus();
             }
             document.getElementById(deps.parent)?.focus();

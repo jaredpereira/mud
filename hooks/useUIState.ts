@@ -1,3 +1,4 @@
+import Router from "next/router";
 import { ReadTransaction } from "replicache";
 import { scanIndex } from "src/replicache";
 import { sortByPosition } from "src/utils";
@@ -8,6 +9,7 @@ export let useUIState = create<{
   focusMode: boolean;
   root: undefined | string;
   openStates: { [key: string]: boolean };
+  setRoot: (root?: string) => void;
   setOpen: (entity: string, open: boolean) => void;
   setFocused: (entity: string | undefined) => void;
 }>((set) => ({
@@ -16,6 +18,13 @@ export let useUIState = create<{
   mode: "normal",
   focusMode: false,
   focused: undefined,
+
+  setRoot: (id: string | undefined) => {
+    let query = { ...Router.query, root: id };
+    Router.push({ query }, undefined, {
+      shallow: true,
+    });
+  },
   setFocused: (id: string | undefined) => set({ focused: id }),
 
   setOpen: (entity: string, open: boolean) =>
