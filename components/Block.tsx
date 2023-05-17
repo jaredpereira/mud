@@ -32,19 +32,8 @@ export function Block(props: BlockProps) {
   let blurred =
     inFocusMode && !focused && !props.parentFocused && !childFocused;
 
-  let longPressTimeout = useRef<null | number>(null);
   return (
     <div
-      onPointerDown={(e) => {
-        e.stopPropagation();
-        longPressTimeout.current = window.setTimeout(() => {
-          e.preventDefault();
-          useUIState.setState(() => ({ root: props.entityID }));
-        }, 400);
-      }}
-      onPointerUp={() => {
-        if (longPressTimeout.current) clearTimeout(longPressTimeout.current);
-      }}
       style={{
         borderColor: blurred ? "#00000040" : "#000000FF",
         backgroundColor:
@@ -202,9 +191,20 @@ export const BlockContent = (
 const ToggleOpen = (props: { entityID: string; count: number }) => {
   let expanded = useUIState((s) => s.openStates[props.entityID]);
   let setOpen = useUIState((s) => s.setOpen);
+  let longPressTimeout = useRef<null | number>(null);
   if (props.count === 0) return <div className="w-min-[3ch]" />;
   return (
     <button
+      onPointerDown={(e) => {
+        e.stopPropagation();
+        longPressTimeout.current = window.setTimeout(() => {
+          e.preventDefault();
+          useUIState.setState(() => ({ root: props.entityID }));
+        }, 800);
+      }}
+      onPointerUp={() => {
+        if (longPressTimeout.current) clearTimeout(longPressTimeout.current);
+      }}
       style={{ transform: !expanded ? "rotate(-90deg)" : "rotate(0deg" }}
       className="w-fit self-start pt-1 pr-1 text-xs italic"
       onClick={() => {
