@@ -13,47 +13,48 @@ export const Header = () => {
   return (
     <>
       <div className="h-6 p-4" />
-      <div className="fixed z-10 h-6 w-full p-2" style={{ top: 0, left: 0 }}>
-        <div className="m-auto max-w-3xl  pl-2 pr-6">
-          <div className="flex flex-row justify-between gap-2 border-b bg-background">
+      <div
+        className="fixed z-10 h-6 w-full border-b bg-background"
+        style={{ top: 0, left: 0 }}
+      >
+        <div className="m-auto flex  max-w-3xl flex-row justify-between gap-2 pl-2  pr-6">
+          <button
+            className={`justify-self-end text-sm ${
+              focusMode ? "underline" : ""
+            }`}
+            onClick={() => {
+              useUIState.setState((s) => ({ focusMode: !s.focusMode }));
+            }}
+          >
+            focus
+          </button>
+          <button
+            onClick={async () => {
+              if (!rep) return;
+              let parent = root || home.entity;
+              let siblings = await rep.query((tx) =>
+                scanIndex(tx).vae(parent, "block/parent")
+              );
+              let child = ulid();
+              await mutate("addChildBlock", {
+                factID: ulid(),
+                parent: root || home.entity,
+                child,
+                before: siblings?.sort(sortByPosition)[0]?.entity || "",
+              });
+              useUIState.setState({ focused: child });
+            }}
+          >
+            <Plus />
+          </button>
+          {
             <button
-              className={`justify-self-end text-sm ${
-                focusMode ? "underline" : ""
-              }`}
-              onClick={() => {
-                useUIState.setState((s) => ({ focusMode: !s.focusMode }));
-              }}
+              onClick={() => useUIState.getState().setRoot(focused)}
+              className={!focused ? "opacity-0" : ""}
             >
-              focus
+              zooom
             </button>
-            <button
-              onClick={async () => {
-                if (!rep) return;
-                let parent = root || home.entity;
-                let siblings = await rep.query((tx) =>
-                  scanIndex(tx).vae(parent, "block/parent")
-                );
-                let child = ulid();
-                await mutate("addChildBlock", {
-                  factID: ulid(),
-                  parent: root || home.entity,
-                  child,
-                  before: siblings?.sort(sortByPosition)[0]?.entity || "",
-                });
-                useUIState.setState({ focused: child });
-              }}
-            >
-              <Plus />
-            </button>
-            {
-              <button
-                onClick={() => useUIState.getState().setRoot(focused)}
-                className={!focused ? "opacity-0" : ""}
-              >
-                zooom
-              </button>
-            }
-          </div>
+          }
         </div>
       </div>
     </>
