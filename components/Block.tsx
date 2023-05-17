@@ -121,7 +121,7 @@ export const BlockContent = (
         textareaRef={textareaRef}
         onSelect={onSelect}
         onKeyDown={onKeyDown}
-        className={`h-full min-h-[24px] w-full bg-inherit ${
+        className={`h-full min-h-[24px] w-full scroll-mb-4 bg-inherit ${
           props.blurred ? "opacity-25" : ""
         }
           `}
