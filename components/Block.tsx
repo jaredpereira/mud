@@ -6,7 +6,7 @@ import { useUIState } from "hooks/useUIState";
 import { SyntheticEvent, useCallback, useRef, useState } from "react";
 import { getCoordinatesInTextarea } from "src/getCoordinatesInTextarea";
 import { getLinkAtCursor, sortByPosition } from "src/utils";
-import { Caret } from "./Icons";
+import { Caret, Dot } from "./Icons";
 
 export type BlockProps = {
   isRoot?: boolean;
@@ -192,26 +192,33 @@ const ToggleOpen = (props: { entityID: string; count: number }) => {
   let expanded = useUIState((s) => s.openStates[props.entityID]);
   let setOpen = useUIState((s) => s.setOpen);
   let longPressTimeout = useRef<null | number>(null);
-  if (props.count === 0) return <div className="w-min-[3ch]" />;
   return (
     <button
+      className={`w-fit self-start pt-1 pr-1 text-grey-35`}
       onPointerDown={(e) => {
+        if (e.button !== 0) return;
         e.stopPropagation();
         longPressTimeout.current = window.setTimeout(() => {
           e.preventDefault();
+          longPressTimeout.current = null;
           useUIState.setState(() => ({ root: props.entityID }));
         }, 800);
       }}
       onPointerUp={() => {
-        if (longPressTimeout.current) clearTimeout(longPressTimeout.current);
+        if (longPressTimeout.current) {
+          clearTimeout(longPressTimeout.current);
+          longPressTimeout.current = null;
+        }
       }}
-      style={{ transform: !expanded ? "rotate(-90deg)" : "rotate(0deg" }}
-      className="w-fit self-start pt-1 pr-1 text-xs italic"
+      style={{
+        transform:
+          !expanded && props.count > 0 ? "rotate(-90deg)" : "rotate(0deg)",
+      }}
       onClick={() => {
         setOpen(props.entityID, !expanded);
       }}
     >
-      <Caret />
+      {props.count === 0 ? <Dot /> : <Caret />}
     </button>
   );
 };

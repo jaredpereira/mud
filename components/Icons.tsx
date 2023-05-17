@@ -164,3 +164,23 @@ export const Plus = () => (
     />
   </svg>
 );
+
+export const Dot = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    direction="ltr"
+    width="16"
+    height="16"
+    viewBox="984 758 64 64"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path
+      d="M7.7294,-0.4674 Q7.8446,1.4378 7.06,3.1783 T4.7753,6.0958 1.39,7.6168 -2.3043,7.3927 -5.476,5.475 -7.3932,2.3029 -7.6165,-1.3968 -6.0949,-4.7765 -3.1769,-7.0618 0.46,-7.7293 4.00,-6.626 6.62,-4.0054 7.72,-0.4674 Z"
+      fill="currentColor"
+      strokeLinecap="round"
+      transform="matrix(1, 0, 0, 1, 1016, 790)"
+      opacity="1"
+    />
+  </svg>
+);
