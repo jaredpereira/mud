@@ -191,34 +191,20 @@ export const BlockContent = (
 const ToggleOpen = (props: { entityID: string; count: number }) => {
   let expanded = useUIState((s) => s.openStates[props.entityID]);
   let setOpen = useUIState((s) => s.setOpen);
-  let longPressTimeout = useRef<null | number>(null);
   return (
     <button
-      className={`w-fit self-start pt-1 pr-1 text-grey-35`}
-      onPointerDown={(e) => {
-        if (e.button !== 0) return;
-        e.stopPropagation();
-        longPressTimeout.current = window.setTimeout(() => {
-          e.preventDefault();
-          longPressTimeout.current = null;
-          useUIState.setState(() => ({ root: props.entityID }));
-        }, 800);
-      }}
-      onPointerUp={() => {
-        if (longPressTimeout.current) {
-          clearTimeout(longPressTimeout.current);
-          longPressTimeout.current = null;
-        }
-      }}
+      className={`w-fit self-start pt-1 pr-1 text-grey-35 ${
+        props.count === 0 ? "opacity-0" : ""
+      }`}
       style={{
         transform:
           !expanded && props.count > 0 ? "rotate(-90deg)" : "rotate(0deg)",
       }}
       onClick={() => {
-        setOpen(props.entityID, !expanded);
+        if (props.count > 0) setOpen(props.entityID, !expanded);
       }}
     >
-      {props.count === 0 ? <Dot /> : <Caret />}
+      <Caret />
     </button>
   );
 };
