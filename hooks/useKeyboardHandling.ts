@@ -4,6 +4,7 @@ import { Fact } from "data/Facts";
 import { useCallback, useContext } from "react";
 import { scanIndex } from "src/replicache";
 import { ulid } from "src/ulid";
+import { getLinkAtCursor } from "src/utils";
 import { useMutations } from "./useReplicache";
 import { getLastOpenChild, useUIState } from "./useUIState";
 
@@ -63,13 +64,17 @@ export const useKeyboardHandling = (
         if (undo)
           action.add({
             undo: () => {
-              ref?.current?.setSelectionRange(start, end);
+              setTimeout(() => {
+                ref?.current?.setSelectionRange(start, end);
+              }, 10);
             },
             redo: () => {
-              ref?.current?.setSelectionRange(
-                cursors[0] + offset,
-                cursors[1] + offset
-              );
+              setTimeout(() => {
+                ref?.current?.setSelectionRange(
+                  cursors[0] + offset,
+                  cursors[1] + offset
+                );
+              }, 10);
             },
           });
         await mutate("assertFact", {
@@ -77,10 +82,12 @@ export const useKeyboardHandling = (
           attribute: "block/content",
           value: newValue,
         });
-        ref?.current?.setSelectionRange(
-          cursors[0] + offset,
-          cursors[1] + offset
-        );
+        setTimeout(() => {
+          ref?.current?.setSelectionRange(
+            cursors[0] + offset,
+            cursors[1] + offset
+          );
+        }, 10);
         if (undo) action.end();
       };
 
@@ -429,7 +436,7 @@ export const useKeyboardHandling = (
           break;
         }
         case "[": {
-          if (e.ctrlKey || e.altKey) break;
+          if (e.ctrlKey || e.altKey || e.metaKey) break;
           e.preventDefault();
           if (start !== end) {
             transact((text) => {
@@ -445,7 +452,7 @@ export const useKeyboardHandling = (
           break;
         }
         case "]": {
-          if (e.ctrlKey || e.altKey) break;
+          if (e.ctrlKey || e.altKey || e.metaKey) break;
           let start = e.currentTarget.selectionStart,
             end = e.currentTarget.selectionEnd;
           if (start === end) {
