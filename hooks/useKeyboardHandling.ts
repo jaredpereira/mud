@@ -300,7 +300,10 @@ export const useKeyboardHandling = (
                   ?.entity
               )
                 useUIState.getState().setRoot(undefined);
-              else useUIState.getState().setRoot(parent);
+              else {
+                useUIState.getState().setRoot(parent);
+                useUIState.getState().setFocused(parent);
+              }
               keepFocus();
             }
             document.getElementById(deps.parent)?.focus();
