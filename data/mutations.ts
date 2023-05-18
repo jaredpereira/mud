@@ -2,7 +2,7 @@ import { Env } from "backend/SpaceDurableObject";
 import { generateKeyBetween } from "src/fractional-indexing";
 import { sortByPosition } from "src/utils";
 import { Attribute, ReferenceAttributes } from "./Attributes";
-import { Fact } from "./Facts";
+import { Fact, ref } from "./Facts";
 import { Message } from "./Messages";
 
 export type MutationContext = {
@@ -245,6 +245,85 @@ const outdentBlock: Mutation<{ entityID: string; factID: string }> = async (
   });
 };
 
+const updateBlockContent: Mutation<{ block: string; content: string }> = async (
+  args,
+  ctx
+) => {
+  if (args.content.startsWith("#")) {
+    let title = args.content.split("\n")[0].slice(1).replace(/^#+/, "").trim();
+    let existingTitle = await ctx.scanIndex.eav(
+      args.block,
+      "block/unique-name"
+    );
+
+    if (existingTitle && existingTitle.value !== title) {
+      let existingLinks = await ctx.scanIndex.vae(
+        args.block,
+        "block/inline-link-to"
+      );
+      console.log(existingLinks);
+      for (let link of existingLinks) {
+        console.log(link);
+        let content = await ctx.scanIndex.eav(link.entity, "block/content");
+        if (!content) continue;
+        await ctx.assertFact({
+          entity: link.entity,
+          attribute: "block/content",
+          value: content.value.replace(
+            `[[${existingTitle.value}]]`,
+            `[[${title}]]`
+          ),
+        });
+      }
+    }
+    if (!existingTitle || existingTitle.value !== title) {
+      await ctx.assertFact({
+        entity: args.block,
+        attribute: "block/unique-name",
+        value: title,
+      });
+    }
+  }
+
+  let existingLinks = await Promise.all(
+    (
+      await ctx.scanIndex.eav(args.block, "block/inline-link-to")
+    ).map(async (l) => ({
+      id: l.id,
+      title: await ctx.scanIndex.eav(l.value.value, "block/unique-name"),
+    }))
+  );
+  console.log(existingLinks);
+  let newLinks = [...args.content.matchAll(/\[\[([^\[\n\]]*)\]\]/g)];
+
+  let linkstoremove = existingLinks.filter(
+    (l) => !newLinks.find((n) => n[1] === l.title?.value)
+  );
+
+  let linkstoadd = newLinks.filter(
+    (n) => !existingLinks.find((l) => n[1] === l.title?.value)
+  );
+
+  for (let link of linkstoremove) {
+    await ctx.retractFact(link.id);
+  }
+  for (let link of linkstoadd) {
+    let title = link[1];
+    let entity = await ctx.scanIndex.ave("block/unique-name", title);
+    if (!entity || entity.value !== title) continue;
+    await ctx.assertFact({
+      entity: args.block,
+      attribute: "block/inline-link-to",
+      value: ref(entity.entity),
+    });
+  }
+  await ctx.assertFact({
+    entity: args.block,
+    attribute: "block/content",
+    value: args.content,
+  });
+};
+
 export const Mutations = {
   assertFact,
   retractFact,
@@ -253,6 +332,7 @@ export const Mutations = {
   addChildBlock,
   indentBlock,
   outdentBlock,
+  updateBlockContent,
   moveBlockDown,
   moveBlockUp,
 };

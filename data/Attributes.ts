@@ -49,6 +49,17 @@ export const DefaultAttributes = {
     unique: false,
     cardinality: "one",
   },
+  "block/unique-name": {
+    type: "string",
+    unique: true,
+    cardinality: "one",
+  },
+
+  "block/inline-link-to": {
+    type: "reference",
+    unique: false,
+    cardinality: "many",
+  },
   "block/parent": {
     type: "parent",
     unique: false,

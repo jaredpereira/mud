@@ -11,7 +11,7 @@ import { getLastOpenChild, useUIState } from "./useUIState";
 export const useKeyboardHandling = (
   deps: {
     firstChild?: string;
-    suggestions: Fact<"block/content">[];
+    suggestions: Fact<"block/unique-name">[];
     close: () => void;
     cursorCoordinates?: { textIndex: number };
     suggestionPrefix?: string;
@@ -77,10 +77,9 @@ export const useKeyboardHandling = (
               }, 10);
             },
           });
-        await mutate("assertFact", {
-          entity: entityID,
-          attribute: "block/content",
-          value: newValue,
+        await mutate("updateBlockContent", {
+          block: entityID,
+          content: newValue,
         });
         setTimeout(() => {
           ref?.current?.setSelectionRange(

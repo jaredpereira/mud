@@ -1,14 +1,45 @@
 import React, { forwardRef, useCallback } from "react";
 import Linkify from "linkify-react";
 import { parseLine } from "src/parseMarkdownLine";
+import { useUIState } from "hooks/useUIState";
+import { useMutations } from "hooks/useReplicache";
+import { scanIndex } from "src/replicache";
 
 export const RenderedText = forwardRef<
   HTMLPreElement,
   { text: string; renderLinks?: boolean } & JSX.IntrinsicElements["pre"]
 >((props, ref) => {
-  let openLink = useCallback(async (_link: string) => {}, []);
+  let { rep } = useMutations();
+  let openLink = useCallback(
+    async (link: string) => {
+      if (!rep) return;
+      let block = await rep.query((tx) =>
+        scanIndex(tx).ave("block/unique-name", link.slice(2, -2))
+      );
+      if (block) {
+        let entity = block.entity;
+        let path = await rep.query(async (tx) => {
+          let path = [];
+          let current = entity;
+          while (current) {
+            let parent = await scanIndex(tx).eav(current, "block/parent");
+            if (!parent) break;
+            path.push(parent.value.value);
+            current = parent.value.value;
+          }
+          return path;
+        });
+        let state = useUIState.getState();
+        if (state.root && !path.includes(state.root)) {
+          state.setRoot(undefined);
+        }
+        state.setFocused(block.entity);
+      }
+    },
+    [rep]
+  );
   let parseConfig = {
-    renderLinks: props.renderLinks,
+    renderLinks: true,
     openLink,
   };
   return (

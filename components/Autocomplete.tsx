@@ -8,7 +8,7 @@ export const Autocomplete = (props: {
   top: number;
   left: number;
   suggestionIndex: number;
-  suggestions: Fact<"block/content">[];
+  suggestions: Fact<"block/unique-name">[];
   onClick: (item: string) => void;
 }) => {
   const previousSelected = useRef(0);
@@ -99,10 +99,14 @@ const ListItem = (props: {
 export const useSuggestions = () => {
   let [suggestionPrefix, setSuggestionPrefix] = useState<undefined | string>();
   let [suggestionIndex, setSuggestionIndex] = useState(0);
-  let names = db.useAttribute(suggestionPrefix ? "block/content" : null);
+  let names = db.useAttribute(suggestionPrefix ? "block/unique-name" : null);
   let suggestions = !suggestionPrefix
     ? []
-    : names.filter((title) => title.value.includes(suggestionPrefix || ""));
+    : names.filter((title) =>
+        title.value
+          .toLocaleLowerCase()
+          .includes(suggestionPrefix?.toLocaleLowerCase() || "")
+      );
   useEffect(() => {
     if (suggestionIndex > suggestions.length - 1)
       setSuggestionIndex(suggestions.length - 1);

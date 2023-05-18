@@ -176,10 +176,9 @@ export const BlockContent = (
               textareaRef.current?.setSelectionRange(start, end);
             },
           });
-          await mutate("assertFact", {
-            entity: props.entityID,
-            attribute: "block/content",
-            value: value,
+          await mutate("updateBlockContent", {
+            block: props.entityID,
+            content: value,
           });
           previousSelection.current = { start, end };
         }}
