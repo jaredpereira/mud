@@ -110,7 +110,7 @@ const addChildBlock: Mutation<{
   let children = (await ctx.scanIndex.vae(args.parent, "block/parent")).sort(
     sortByPosition
   );
-  let index;
+  let index = 0;
   if (args.before)
     index = children.findIndex((c) => c.entity === args.before) - 1;
   else index = children.findIndex((c) => c.entity === args.after);

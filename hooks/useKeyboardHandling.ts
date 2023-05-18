@@ -120,7 +120,7 @@ export const useKeyboardHandling = (
             close();
             break;
           }
-          if (e.ctrlKey) {
+          if (e.ctrlKey && !e.shiftKey) {
             useUIState.setState((s) => ({
               openStates: {
                 ...s.openStates,
@@ -129,15 +129,28 @@ export const useKeyboardHandling = (
             }));
             break;
           }
-          if (!e.shiftKey) {
+          if (!e.shiftKey || e.ctrlKey) {
             e.preventDefault();
             let child = ulid();
-            await mutate("addChildBlock", {
-              factID: ulid(),
-              parent: deps.isRoot ? entityID : parent,
-              after: entityID,
-              child,
-            });
+            if (e.ctrlKey) {
+              useUIState.setState((s) => ({
+                openStates: {
+                  ...s.openStates,
+                  [entityID]: true,
+                },
+              }));
+              await mutate("addChildBlock", {
+                factID: ulid(),
+                parent: entityID,
+                child,
+              });
+            } else
+              await mutate("addChildBlock", {
+                factID: ulid(),
+                parent: deps.isRoot ? entityID : parent,
+                after: entityID,
+                child,
+              });
             useUIState.setState(() => ({ focused: child }));
             document.getElementById(child)?.focus();
             break;
