@@ -52,7 +52,7 @@ export const Header = () => {
               onClick={() => useUIState.getState().setRoot(focused)}
               className={!focused ? "opacity-0" : ""}
             >
-              zooom
+              zoom
             </button>
           }
         </div>
