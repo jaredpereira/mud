@@ -40,7 +40,7 @@ export function Block(props: BlockProps) {
           (props.depth % 2 === 1 ? "#FFE4B5" : "#FFF8DC") +
           (blurred ? "40" : "FF"),
       }}
-      className={`rounded-md border p-2 pr-1 `}
+      className={`rounded-md p-2 pr-1 ${focused ? "border-2" : "border"}`}
     >
       <div className="flex flex-row gap-1">
         <BlockContent
