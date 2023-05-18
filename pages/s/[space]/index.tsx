@@ -105,7 +105,7 @@ const BreadCrumbs = (props: { entityID: string }) => {
       <div className="no-scrollbar flex flex-row-reverse gap-0.5 overflow-x-scroll text-xs italic">
         {path.map((id, index) => (
           <>
-            <Crumb entityID={id} />
+            <Crumb entityID={id} key={id} />
             {index !== path.length - 1 && <span className="font-bold">/</span>}
           </>
         ))}
