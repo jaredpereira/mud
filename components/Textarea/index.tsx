@@ -35,7 +35,7 @@ export const Textarea = (
   delete newProps.textareaRef;
 
   useEffect(() => {
-    if (!focused || !textarea.current) return;
+    if (!focused || !textarea.current) return setInitialCursor(null);
     if (textarea.current === document.activeElement) return;
     textarea.current.focus({ preventScroll: true });
     if (initialCursor)
