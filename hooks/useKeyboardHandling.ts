@@ -2,9 +2,10 @@ import { useAutocompleteState } from "components/Autocomplete";
 import { ReplicacheContext } from "components/ReplicacheProvider";
 import { Fact } from "data/Facts";
 import { useContext, useEffect } from "react";
+import { Replicache } from "replicache";
 import { scanIndex } from "src/replicache";
 import { ulid } from "src/ulid";
-import { sortByPosition } from "src/utils";
+import { modifyString, sortByPosition, Transaction } from "src/utils";
 import { useMutations } from "./useReplicache";
 import { getLastOpenChild, useUIState } from "./useUIState";
 
@@ -26,80 +27,6 @@ export const useKeyboardHandling = () => {
         current: document.getElementById(entityID) as
           | HTMLTextAreaElement
           | undefined,
-      };
-      const getSuggestions = async () => {
-        let state = useAutocompleteState.getState();
-        let suggestions: Fact<"block/unique-name">[] = [];
-        if (state.suggestionPrefix) {
-          suggestions = (
-            (await rep?.query((tx) =>
-              scanIndex(tx).aev("block/unique-name")
-            )) || []
-          ).filter((title) =>
-            title.value
-              .toLocaleLowerCase()
-              .includes(state.suggestionPrefix?.toLocaleLowerCase() || "")
-          );
-        }
-        return {
-          suggestions,
-          ...state,
-        };
-      };
-      let getFirstChild = async () => {
-        if (!rep) return undefined;
-        return (
-          await rep.query((tx) => scanIndex(tx).vae(entityID, "block/parent"))
-        ).sort(sortByPosition)[0]?.entity;
-      };
-      let getAfter = async () => {
-        if (!rep) return;
-        let parent = await rep.query((tx) =>
-          scanIndex(tx).eav(entityID, "block/parent")
-        );
-        if (!parent) return;
-        let parentEntity = parent.value.value;
-        let siblings = (
-          await rep.query((tx) =>
-            scanIndex(tx).vae(parentEntity, "block/parent")
-          )
-        ).sort(sortByPosition);
-        let index = siblings.findIndex((s) => s.entity === entityID);
-        if (index === -1) return;
-        return siblings[index + 1].entity;
-      };
-      let getParent = async () => {
-        if (!rep) return;
-        let parent = await rep.query((tx) =>
-          scanIndex(tx).eav(entityID, "block/parent")
-        );
-        if (!parent) return;
-        return parent.entity;
-      };
-      const getBefore = async () => {
-        if (!rep) return;
-        let parent = await rep.query((tx) =>
-          scanIndex(tx).eav(entityID, "block/parent")
-        );
-        if (!parent) return;
-        let parentEntity = parent.value.value;
-        let siblings = (
-          await rep.query((tx) =>
-            scanIndex(tx).vae(parentEntity, "block/parent")
-          )
-        ).sort(sortByPosition);
-        let index = siblings.findIndex((s) => s.entity === entityID);
-        if (index === -1) return;
-        return siblings[index - 1].entity;
-      };
-      const keepFocus = () => {
-        document.getElementById(entityID)?.focus();
-        setTimeout(() => {
-          document
-            .getElementById(entityID)
-            //@ts-ignore
-            ?.setSelectionRange?.(start, end);
-        }, 50);
       };
       let transact = async (
         transaction: Transaction,
@@ -153,7 +80,7 @@ export const useKeyboardHandling = () => {
           break;
         }
         case "Enter": {
-          let s = await getSuggestions();
+          let s = await getSuggestions(rep);
 
           if (s.suggestions.length > 0) {
             e.preventDefault();
@@ -201,7 +128,7 @@ export const useKeyboardHandling = () => {
                 child,
               });
             } else {
-              let parent = await getParent();
+              let parent = await getParent(entityID, rep);
               if (!parent) return;
               await mutate("addChildBlock", {
                 factID: ulid(),
@@ -219,7 +146,7 @@ export const useKeyboardHandling = () => {
         }
         case "Tab": {
           e.preventDefault();
-          let s = await getSuggestions();
+          let s = await getSuggestions(rep);
           if (s.suggestions.length > 0) {
             if (e.shiftKey) {
               if (s.suggestionIndex > 0) s.setSuggestionIndex((i) => i - 1);
@@ -232,7 +159,7 @@ export const useKeyboardHandling = () => {
             if (e.shiftKey) {
               await mutate("outdentBlock", { factID: ulid(), entityID });
             } else {
-              let previousSibling = await getBefore();
+              let previousSibling = await getBefore(entityID, rep);
               if (!previousSibling) break;
               let p = previousSibling;
               useUIState.setState((s) => ({
@@ -243,12 +170,12 @@ export const useKeyboardHandling = () => {
               }));
               await mutate("indentBlock", { factID: ulid(), entityID });
             }
-            keepFocus();
+            keepFocus(entityID);
           }
           break;
         }
         case "ArrowUp": {
-          let s = await getSuggestions();
+          let s = await getSuggestions(rep);
           if (s.suggestions.length > 0) {
             e.preventDefault();
             if (s.suggestionIndex > 0) s.setSuggestionIndex((i) => i - 1);
@@ -257,7 +184,7 @@ export const useKeyboardHandling = () => {
           break;
         }
         case "ArrowDown": {
-          let s = await getSuggestions();
+          let s = await getSuggestions(rep);
           if (s.suggestions.length > 0) {
             e.preventDefault();
             if (s.suggestionIndex < s.suggestions.length - 1)
@@ -306,21 +233,21 @@ export const useKeyboardHandling = () => {
         }
         case "k": {
           if (!e.ctrlKey) break;
-          let s = await getSuggestions();
+          let s = await getSuggestions(rep);
           if (s.suggestions.length > 0) {
             e.preventDefault();
             if (s.suggestionIndex > 0) s.setSuggestionIndex((i) => i - 1);
             break;
           } else {
             e.preventDefault();
-            let previousSibling = await getBefore();
+            let previousSibling = await getBefore(entityID, rep);
             if (previousSibling) {
               let p = previousSibling;
               if (!rep) return;
               let lastchild = await rep.query((tx) => getLastOpenChild(tx, p));
               document.getElementById(lastchild)?.focus();
             } else {
-              let parent = await getParent();
+              let parent = await getParent(entityID, rep);
               if (parent) document.getElementById(parent)?.focus();
             }
           }
@@ -334,7 +261,7 @@ export const useKeyboardHandling = () => {
         }
         case "j": {
           if (!e.ctrlKey) break;
-          let s = await getSuggestions();
+          let s = await getSuggestions(rep);
           if (s.suggestions.length > 0) {
             e.preventDefault();
             if (s.suggestionIndex < s.suggestions.length - 1)
@@ -342,7 +269,7 @@ export const useKeyboardHandling = () => {
             break;
           } else {
             e.preventDefault();
-            let firstChild = await getFirstChild();
+            let firstChild = await getFirstChild(entityID, rep);
             if (
               firstChild &&
               (useUIState.getState().openStates[entityID] ||
@@ -350,7 +277,7 @@ export const useKeyboardHandling = () => {
             )
               document.getElementById(firstChild)?.focus();
             else {
-              let after = await getAfter();
+              let after = await getAfter(entityID, rep);
               if (after) document.getElementById(after)?.focus();
             }
           }
@@ -360,7 +287,7 @@ export const useKeyboardHandling = () => {
           if (e.ctrlKey) {
             e.preventDefault();
             useUIState.getState().setRoot(entityID);
-            keepFocus();
+            keepFocus(entityID);
           }
           break;
         }
@@ -369,7 +296,7 @@ export const useKeyboardHandling = () => {
           if (e.ctrlKey) {
             e.preventDefault();
             let root = useUIState.getState().root;
-            let parent = await getParent();
+            let parent = await getParent(entityID, rep);
             if (root === entityID) {
               if (
                 parent ===
@@ -381,7 +308,7 @@ export const useKeyboardHandling = () => {
                 useUIState.getState().setRoot(parent);
                 useUIState.getState().setFocused(parent);
               }
-              keepFocus();
+              keepFocus(entityID);
             }
             if (parent) document.getElementById(parent)?.focus();
           }
@@ -453,13 +380,13 @@ export const useKeyboardHandling = () => {
             });
             action.end();
             let id: string | undefined;
-            let previousSibling = await getBefore();
+            let previousSibling = await getBefore(entityID);
             if (previousSibling) {
               let p = previousSibling;
               if (!rep) return;
               id = await rep.query((tx) => getLastOpenChild(tx, p));
             } else {
-              id = await getParent();
+              id = await getParent(entityID);
             }
             if (id) document.getElementById(id)?.focus();
             setTimeout(() => {
@@ -479,7 +406,6 @@ export const useKeyboardHandling = () => {
               text.insert(start, "*");
               text.insert(end + 1, "*");
             });
-            //React seems to change the selection state if you set the value to something the current value is not
           }
           break;
         }
@@ -490,7 +416,6 @@ export const useKeyboardHandling = () => {
               text.insert(start, "**");
               text.insert(end + 2, "**");
             });
-            //React seems to change the selection state if you set the value to something the current value is not
           }
           break;
         }
@@ -521,7 +446,6 @@ export const useKeyboardHandling = () => {
               text.insert(start, "[");
               text.insert(end + 1, "]");
             });
-            //React seems to change the selection state if you set the value to something the current value is not
           } else {
             transact((text) => {
               text.insert(start, "[]");
@@ -548,32 +472,71 @@ export const useKeyboardHandling = () => {
   }, [rep]);
 };
 
-export type Transaction = (tx: {
-  insert: (i: number, s: string) => void;
-  delete: (i: number, l: number) => void;
-}) => void;
-export function modifyString(
-  input: string,
-  initialCursor: number[],
-  transact: Transaction
-): [string, number[]] {
-  let output = input;
-  let cursors = initialCursor;
-  transact({
-    insert: (i: number, s: string) => {
-      output = output.slice(0, i) + s + output.slice(i);
-      cursors = cursors.map((c) => {
-        if (i < c) return c + s.length;
-        return c;
-      });
-    },
-    delete: (i: number, l: number) => {
-      output = output.slice(0, i) + output.slice(i + l);
-      cursors = cursors.map((c) => {
-        if (i > c) return c - l;
-        return c;
-      });
-    },
-  });
-  return [output, cursors];
+async function getSuggestions(rep: Replicache | undefined) {
+  let state = useAutocompleteState.getState();
+  let suggestions: Fact<"block/unique-name">[] = [];
+  if (state.suggestionPrefix) {
+    suggestions = (
+      (await rep?.query((tx) => scanIndex(tx).aev("block/unique-name"))) || []
+    ).filter((title) =>
+      title.value
+        .toLocaleLowerCase()
+        .includes(state.suggestionPrefix?.toLocaleLowerCase() || "")
+    );
+  }
+  return {
+    suggestions,
+    ...state,
+  };
+}
+async function getFirstChild(entityID: string, rep: Replicache | undefined) {
+  if (!rep) return undefined;
+  return (
+    await rep.query((tx) => scanIndex(tx).vae(entityID, "block/parent"))
+  ).sort(sortByPosition)[0]?.entity;
+}
+async function getAfter(entityID: string, rep: Replicache | undefined) {
+  if (!rep) return;
+  let parent = await rep.query((tx) =>
+    scanIndex(tx).eav(entityID, "block/parent")
+  );
+  if (!parent) return;
+  let parentEntity = parent.value.value;
+  let siblings = (
+    await rep.query((tx) => scanIndex(tx).vae(parentEntity, "block/parent"))
+  ).sort(sortByPosition);
+  let index = siblings.findIndex((s) => s.entity === entityID);
+  if (index === -1) return;
+  return siblings[index + 1].entity;
+}
+async function getParent(entityID: string, rep: Replicache | undefined) {
+  if (!rep) return;
+  let parent = await rep.query((tx) =>
+    scanIndex(tx).eav(entityID, "block/parent")
+  );
+  if (!parent) return;
+  return parent.entity;
+}
+async function getBefore(entityID: string, rep: Replicache | undefined) {
+  if (!rep) return;
+  let parent = await rep.query((tx) =>
+    scanIndex(tx).eav(entityID, "block/parent")
+  );
+  if (!parent) return;
+  let parentEntity = parent.value.value;
+  let siblings = (
+    await rep.query((tx) => scanIndex(tx).vae(parentEntity, "block/parent"))
+  ).sort(sortByPosition);
+  let index = siblings.findIndex((s) => s.entity === entityID);
+  if (index === -1) return;
+  return siblings[index - 1].entity;
+}
+function keepFocus(entityID: string) {
+  document.getElementById(entityID)?.focus();
+  setTimeout(() => {
+    document
+      .getElementById(entityID)
+      //@ts-ignore
+      ?.setSelectionRange?.(start, end);
+  }, 50);
 }
