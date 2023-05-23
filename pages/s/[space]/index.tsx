@@ -9,6 +9,7 @@ import { useRouter } from "next/router";
 import { useSubscribe } from "hooks/useSubscribe";
 import { scanIndex } from "src/replicache";
 import { useEffect } from "react";
+import { useKeyboardHandling } from "hooks/useKeyboardHandling";
 
 export default function StudioPage() {
   let { query } = useRouter();
@@ -32,6 +33,7 @@ export default function StudioPage() {
 }
 
 function Blocks() {
+  useKeyboardHandling();
   let home = db.useAttribute("home")[0];
   let root = useUIState((s) => s.root);
   let rootBlocks = db

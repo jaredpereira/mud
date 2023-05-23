@@ -1,20 +1,38 @@
 import * as Popover from "@radix-ui/react-popover";
-import { Fact } from "data/Facts";
 import { db } from "hooks/useReplicache";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
+import { create } from "zustand";
+import { combine } from "zustand/middleware";
 
 export const Autocomplete = (props: {
   top: number;
   left: number;
-  suggestionIndex: number;
-  suggestions: Fact<"block/unique-name">[];
   onClick: (item: string) => void;
 }) => {
   const previousSelected = useRef(0);
+  let suggestionPrefix = useAutocompleteState((s) => s.suggestionPrefix);
+  let suggestionIndex = useAutocompleteState((s) => s.suggestionIndex);
   useEffect(() => {
-    previousSelected.current === props.suggestionIndex;
+    previousSelected.current === suggestionIndex;
   });
+  let names = db.useAttribute(suggestionPrefix ? "block/unique-name" : null);
+
+  let suggestions = !suggestionPrefix
+    ? []
+    : names.filter((title) =>
+        title.value
+          .toLocaleLowerCase()
+          .includes(suggestionPrefix?.toLocaleLowerCase() || "")
+      );
+  useEffect(() => {
+    if (suggestionIndex > suggestions.length - 1)
+      useAutocompleteState.setState(() => ({
+        suggestionIndex: suggestions.length - 1,
+      }));
+  }, [suggestionIndex, suggestions]);
+  if (!suggestionPrefix || suggestions.length === 0) return null;
+
   return (
     <Popover.Root open>
       {createPortal(
@@ -36,14 +54,14 @@ export const Autocomplete = (props: {
           className="rounded-sm z-10 max-h-32 w-64 overflow-y-scroll border bg-white py-1 text-grey-35"
         >
           <ul>
-            {props.suggestions.map((result, index) => {
+            {suggestions.map((result, index) => {
               return (
                 <ListItem
                   key={result.id}
                   onClick={props.onClick}
                   previousSelectedIndex={previousSelected.current}
                   index={index}
-                  selectedIndex={props.suggestionIndex}
+                  selectedIndex={suggestionIndex}
                   value={result.value}
                 />
               );
@@ -96,28 +114,19 @@ const ListItem = (props: {
   );
 };
 
-export const useSuggestions = () => {
-  let [suggestionPrefix, setSuggestionPrefix] = useState<undefined | string>();
-  let [suggestionIndex, setSuggestionIndex] = useState(0);
-  let names = db.useAttribute(suggestionPrefix ? "block/unique-name" : null);
-  let suggestions = !suggestionPrefix
-    ? []
-    : names.filter((title) =>
-        title.value
-          .toLocaleLowerCase()
-          .includes(suggestionPrefix?.toLocaleLowerCase() || "")
-      );
-  useEffect(() => {
-    if (suggestionIndex > suggestions.length - 1)
-      setSuggestionIndex(suggestions.length - 1);
-  }, [suggestionIndex, suggestions]);
-
-  return {
-    suggestions: suggestions,
-    suggestionIndex,
-    setSuggestionIndex,
-    suggestionPrefix,
-    close: () => setSuggestionPrefix(undefined),
-    setSuggestionPrefix,
-  };
-};
+export const useAutocompleteState = create(
+  combine(
+    {
+      suggestionPrefix: undefined as string | undefined,
+      suggestionIndex: 0,
+    },
+    (set) => ({
+      setSuggestionPrefix: (prefix: string | undefined) => {
+        set({ suggestionPrefix: prefix });
+      },
+      setSuggestionIndex: (newIndex: (n: number) => number) => {
+        set((s) => ({ suggestionIndex: newIndex(s.suggestionIndex) }));
+      },
+    })
+  )
+);

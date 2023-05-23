@@ -53,3 +53,33 @@ export async function getLastChild(
   if (children.length === 0) return parent;
   return getLastChild(tx, children[children.length - 1].entity);
 }
+
+export type Transaction = (tx: {
+  insert: (i: number, s: string) => void;
+  delete: (i: number, l: number) => void;
+}) => void;
+export function modifyString(
+  input: string,
+  initialCursor: number[],
+  transact: Transaction
+): [string, number[]] {
+  let output = input;
+  let cursors = initialCursor;
+  transact({
+    insert: (i: number, s: string) => {
+      output = output.slice(0, i) + s + output.slice(i);
+      cursors = cursors.map((c) => {
+        if (i < c) return c + s.length;
+        return c;
+      });
+    },
+    delete: (i: number, l: number) => {
+      output = output.slice(0, i) + output.slice(i + l);
+      cursors = cursors.map((c) => {
+        if (i > c) return c - l;
+        return c;
+      });
+    },
+  });
+  return [output, cursors];
+}

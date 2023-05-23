@@ -1,4 +1,4 @@
-import { Autocomplete, useSuggestions } from "components/Autocomplete";
+import { Autocomplete, useAutocompleteState } from "components/Autocomplete";
 import { Textarea } from "components/Textarea";
 import { useKeyboardHandling } from "hooks/useKeyboardHandling";
 import { db, useMutations } from "hooks/useReplicache";
@@ -6,7 +6,7 @@ import { useUIState } from "hooks/useUIState";
 import { SyntheticEvent, useCallback, useRef, useState } from "react";
 import { getCoordinatesInTextarea } from "src/getCoordinatesInTextarea";
 import { getLinkAtCursor, sortByPosition } from "src/utils";
-import { Caret, Dot } from "./Icons";
+import { Caret } from "./Icons";
 
 export type BlockProps = {
   isRoot?: boolean;
@@ -33,29 +33,33 @@ export function Block(props: BlockProps) {
     inFocusMode && !focused && !props.parentFocused && !childFocused;
 
   return (
-    <div
-      style={{
-        borderColor: blurred ? "#00000040" : "#000000FF",
-        backgroundColor:
-          (props.depth % 2 === 1 ? "#FFE4B5" : "#FFF8DC") +
-          (blurred ? "40" : "FF"),
-      }}
-      className={`rounded-md p-2 pr-1 ${focused ? "border-2" : "border"}`}
-    >
-      <div className="flex flex-row gap-1">
-        <BlockContent
-          {...props}
-          firstChild={children[0]?.entity}
-          blurred={blurred}
+    <div className="flex flex-row gap-0.5">
+      <ToggleOpen entityID={props.entityID} count={children.length} />
+      <div
+        style={{
+          borderColor: blurred ? "#00000040" : "#000000FF",
+          backgroundColor:
+            (props.depth % 2 === 1 ? "#FFE4B5" : "#FFF8DC") +
+            (blurred ? "40" : "FF"),
+        }}
+        className={`w-full rounded-md py-2 pl-1 pr-1 ${
+          focused ? "border-2" : "border"
+        }`}
+      >
+        <div className="pl-1">
+          <BlockContent
+            {...props}
+            firstChild={children[0]?.entity}
+            blurred={blurred}
+          />
+        </div>
+        <BlockChildren
+          parentFocused={props.parentFocused || focused}
+          entityID={props.entityID}
+          after={props.after}
+          depth={props.depth}
         />
-        <ToggleOpen entityID={props.entityID} count={children.length} />
       </div>
-      <BlockChildren
-        parentFocused={props.parentFocused || focused}
-        entityID={props.entityID}
-        after={props.after}
-        depth={props.depth}
-      />
     </div>
   );
 }
@@ -66,12 +70,7 @@ export const BlockContent = (
   let [cursorCoordinates, setCursorCoordinates] = useState<
     undefined | { top: number; left: number; textIndex: number }
   >();
-  let suggestions = useSuggestions();
-  let onKeyDown = useKeyboardHandling({
-    ...props,
-    cursorCoordinates,
-    ...suggestions,
-  });
+  let setSuggestionPrefix = useAutocompleteState((s) => s.setSuggestionPrefix);
   let content = db.useEntity(props.entityID, "block/content");
   let previousSelection = useRef<null | { start: number; end: number }>();
   const onSelect = useCallback(
@@ -84,9 +83,8 @@ export const BlockContent = (
 
       let link = getLinkAtCursor(value, start);
       if (!link) {
-        suggestions.setSuggestionPrefix(undefined);
+        setSuggestionPrefix(undefined);
         setCursorCoordinates(undefined);
-        suggestions.close();
         return;
       }
       let coordinates = getCoordinatesInTextarea(e.currentTarget, link.start);
@@ -109,18 +107,13 @@ export const BlockContent = (
   let timeout = useRef<null | number>(null);
   return (
     <>
-      {cursorCoordinates && suggestions.suggestionPrefix && (
-        <Autocomplete
-          {...suggestions}
-          {...cursorCoordinates}
-          onClick={() => {}}
-        />
+      {cursorCoordinates && (
+        <Autocomplete {...cursorCoordinates} onClick={() => {}} />
       )}
       <Textarea
         id={props.entityID}
         textareaRef={textareaRef}
         onSelect={onSelect}
-        onKeyDown={onKeyDown}
         className={`h-full min-h-[24px] w-full scroll-mb-4 bg-inherit ${
           props.blurred ? "opacity-25" : ""
         }
@@ -140,10 +133,10 @@ export const BlockContent = (
           if (start !== end) return setCursorCoordinates(undefined);
 
           let link = getLinkAtCursor(value, start);
-          suggestions.setSuggestionPrefix(link?.value);
+          setSuggestionPrefix(link?.value);
           if (!link) {
             setCursorCoordinates(undefined);
-            suggestions.close();
+            setSuggestionPrefix(undefined);
           }
           if (link) {
             let coordinates = getCoordinatesInTextarea(
@@ -192,18 +185,19 @@ const ToggleOpen = (props: { entityID: string; count: number }) => {
   let setOpen = useUIState((s) => s.setOpen);
   return (
     <button
-      className={`w-fit self-start pt-1 pr-1 text-grey-35 ${
+      className={`w-fit self-start pt-4 text-grey-35 ${
         props.count === 0 ? "opacity-0" : ""
       }`}
-      style={{
-        transform:
-          !expanded && props.count > 0 ? "rotate(-90deg)" : "rotate(0deg)",
-      }}
       onClick={() => {
         if (props.count > 0) setOpen(props.entityID, !expanded);
       }}
     >
-      <Caret />
+      <Caret
+        style={{
+          transform:
+            !expanded && props.count > 0 ? "rotate(-90deg)" : "rotate(0deg)",
+        }}
+      />
     </button>
   );
 };
@@ -220,7 +214,7 @@ export function BlockChildren(props: {
   let expanded = useUIState((s) => s.openStates[props.entityID]);
   if (children?.length === 0 || !expanded) return null;
   return (
-    <div className="flex flex-col gap-2 pt-2 pl-1">
+    <div className="flex flex-col gap-2 pt-2">
       {children?.map((block, index) => (
         <Block
           parentFocused={props.parentFocused}
