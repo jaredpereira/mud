@@ -3,6 +3,7 @@ import { ReplicacheContext } from "components/ReplicacheProvider";
 import { Fact } from "data/Facts";
 import { useContext, useEffect } from "react";
 import { Replicache } from "replicache";
+import { generateKeyBetween } from "src/fractional-indexing";
 import { scanIndex } from "src/replicache";
 import { ulid } from "src/ulid";
 import { modifyString, sortByPosition, Transaction } from "src/utils";
@@ -395,7 +396,49 @@ const shortcuts: {
       await mutate("indentBlock", { factID: ulid(), entityID });
     },
   },
-
+  {
+    key: "y",
+    ctrlKey: true,
+    description: "Yank (cut) a block",
+    callback: ({ entityID }) => {
+      useUIState.setState((s) => {
+        if (s.yankedBlock === entityID)
+          return {
+            yankedBlock: undefined,
+          };
+        return {
+          yankedBlock: entityID,
+        };
+      });
+    },
+  },
+  {
+    key: "p",
+    ctrlKey: true,
+    description: "Paste a yanked block",
+    callback: async ({ entityID, mutate, rep }) => {
+      let yankee = useUIState.getState().yankedBlock;
+      if (!yankee || !rep) return;
+      let children = await rep.query((tx) =>
+        scanIndex(tx).vae(entityID, "block/parent")
+      );
+      useUIState.getState().setOpen(entityID, true);
+      useUIState.setState(() => ({ yankedBlock: undefined }));
+      await mutate("assertFact", {
+        factID: ulid(),
+        entity: yankee,
+        attribute: "block/parent",
+        value: {
+          value: entityID,
+          type: "parent",
+          position: generateKeyBetween(
+            null,
+            children.sort(sortByPosition)[0]?.value.position || null
+          ),
+        },
+      });
+    },
+  },
   {
     key: "Tab",
     shiftKey: true,

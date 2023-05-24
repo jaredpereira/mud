@@ -26,6 +26,7 @@ export function Block(props: BlockProps) {
 
   let inFocusMode = useUIState((s) => s.focusMode);
   let focused = useUIState((s) => s.focused === props.entityID);
+  let yanked = useUIState((s) => s.yankedBlock === props.entityID);
   let childFocused = useUIState(
     (s) => s.focused && children.find((child) => child.entity === s.focused)
   );
@@ -37,7 +38,7 @@ export function Block(props: BlockProps) {
       <ToggleOpen entityID={props.entityID} count={children.length} />
       <div
         style={{
-          borderColor: blurred ? "#00000040" : "#000000FF",
+          borderColor: yanked ? "blue" : blurred ? "#00000040" : "#000000FF",
           backgroundColor:
             (props.depth % 2 === 1 ? "#FFE4B5" : "#FFF8DC") +
             (blurred ? "40" : "FF"),

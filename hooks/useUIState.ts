@@ -3,35 +3,35 @@ import { ReadTransaction } from "replicache";
 import { scanIndex } from "src/replicache";
 import { sortByPosition } from "src/utils";
 import { create } from "zustand";
-export let useUIState = create<{
-  mode: "edit" | "normal";
-  focused: undefined | string;
-  focusMode: boolean;
-  root: undefined | string;
-  openStates: { [key: string]: boolean };
-  setRoot: (root?: string) => void;
-  setOpen: (entity: string, open: boolean) => void;
-  setFocused: (entity: string | undefined) => void;
-}>((set) => ({
-  root: undefined,
-  openStates: {},
-  mode: "normal",
-  focusMode: false,
-  focused: undefined,
+import { combine } from "zustand/middleware";
 
-  setRoot: (id: string | undefined) => {
-    let query = { ...Router.query, root: id };
-    Router.push({ query }, undefined, {
-      shallow: true,
-    });
-  },
-  setFocused: (id: string | undefined) => set({ focused: id }),
+export let useUIState = create(
+  combine(
+    {
+      yankedBlock: undefined as string | undefined,
+      root: undefined as string | undefined,
+      openStates: {} as Record<string, boolean>,
+      focusedBlockTextarea: null,
+      mode: "normal",
+      focusMode: false,
+      focused: undefined as string | undefined,
+    },
+    (set) => ({
+      setRoot: (id: string | undefined) => {
+        let query = { ...Router.query, root: id };
+        Router.push({ query }, undefined, {
+          shallow: true,
+        });
+      },
+      setFocused: (id: string | undefined) => set({ focused: id }),
 
-  setOpen: (entity: string, open: boolean) =>
-    set((s) => ({
-      openStates: { ...s.openStates, [entity]: open },
-    })),
-}));
+      setOpen: (entity: string, open: boolean) =>
+        set((s) => ({
+          openStates: { ...s.openStates, [entity]: open },
+        })),
+    })
+  )
+);
 
 export async function getLastOpenChild(
   tx: ReadTransaction,
