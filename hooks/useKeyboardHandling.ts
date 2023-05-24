@@ -18,23 +18,24 @@ export const useKeyboardHandling = () => {
   return useEffect(() => {
     let cb = async (e: KeyboardEvent) => {
       let entity = useUIState.getState().focused;
-      if (!entity) return;
       let entityID = entity;
+      if (!rep) return;
       let el = e.target as HTMLTextAreaElement;
       let value = el?.value,
         start = el?.selectionStart,
         end = el?.selectionEnd;
 
       let ref = {
-        current: document.getElementById(entityID) as
-          | HTMLTextAreaElement
-          | undefined,
+        current: entityID
+          ? (document.getElementById(entityID) as HTMLTextAreaElement)
+          : undefined,
       };
       let transact = async (
         transaction: Transaction,
         offset: number = 0,
         undo?: boolean
       ) => {
+        if (!entityID) return;
         if (undo) action.start();
         let [newValue, cursors] = modifyString(
           value,
@@ -160,6 +161,20 @@ export const useKeyboardHandling = () => {
             break;
           } else {
             e.preventDefault();
+            if (!entityID) {
+              let root =
+                useUIState.getState().root ||
+                (await rep.query((tx) => scanIndex(tx).aev("home")))[0]?.entity;
+              if (!root) return;
+              let children = await rep.query((tx) =>
+                scanIndex(tx).vae(root, "block/parent")
+              );
+              let lastchild =
+                children.sort(sortByPosition)[children.length - 1]?.entity;
+
+              document.getElementById(lastchild)?.focus();
+              return;
+            }
             let previousSibling = await getBefore(entityID, rep);
             if (previousSibling) {
               let p = previousSibling;
@@ -183,6 +198,19 @@ export const useKeyboardHandling = () => {
             break;
           } else {
             e.preventDefault();
+            if (!entityID) {
+              let root =
+                useUIState.getState().root ||
+                (await rep.query((tx) => scanIndex(tx).aev("home")))[0]?.entity;
+              if (!root) return;
+              let children = await rep.query((tx) =>
+                scanIndex(tx).vae(root, "block/parent")
+              );
+              let firstChild = children.sort(sortByPosition)[0]?.entity;
+
+              document.getElementById(firstChild)?.focus();
+              return;
+            }
             let firstChild = await getFirstChild(entityID, rep);
             if (
               firstChild &&
@@ -200,6 +228,7 @@ export const useKeyboardHandling = () => {
         case ":": {
           if (e.ctrlKey) {
             e.preventDefault();
+            if (!entityID) return;
             useUIState.getState().setRoot(entityID);
             keepFocus(entityID, start, end);
           }
@@ -207,6 +236,7 @@ export const useKeyboardHandling = () => {
         }
 
         case "Backspace": {
+          if (!entityID) return;
           if (
             value[start - 1] === "*" &&
             value[start] === "*" &&
@@ -246,7 +276,7 @@ export const useKeyboardHandling = () => {
             action.start();
             action.add({
               undo: async () => {
-                document.getElementById(entityID)?.focus();
+                if (entityID) document.getElementById(entityID)?.focus();
               },
               redo: () => {},
             });
@@ -359,7 +389,7 @@ const shortcuts: {
   description: string;
   callback: (
     ctx: {
-      entityID: string;
+      entityID?: string;
       ref: { current?: HTMLTextAreaElement };
       start: number;
       end: number;
@@ -376,6 +406,7 @@ const shortcuts: {
     key: "Tab",
     description: "Indent block",
     callback: async ({ entityID, rep, mutate }) => {
+      if (!entityID) return;
       let s = await getSuggestions(rep);
       if (
         s.suggestions.length > 0 &&
@@ -417,6 +448,7 @@ const shortcuts: {
     ctrlKey: true,
     description: "Paste a yanked block",
     callback: async ({ entityID, mutate, rep }) => {
+      if (!entityID) return;
       let yankee = useUIState.getState().yankedBlock;
       if (!yankee || !rep) return;
       let children = await rep.query((tx) =>
@@ -444,6 +476,7 @@ const shortcuts: {
     shiftKey: true,
     description: "Outdent block",
     callback: async ({ entityID, mutate, rep }) => {
+      if (!entityID) return;
       let s = await getSuggestions(rep);
       if (s.suggestions.length > 0 && s.suggestionIndex > 0) {
         s.setSuggestionIndex((i) => i - 1);
@@ -457,12 +490,16 @@ const shortcuts: {
     description: "Expand or collapse children",
     ctrlKey: true,
     callback: ({ entityID }) => {
-      useUIState.setState((s) => ({
-        openStates: {
-          ...s.openStates,
-          [entityID]: !s.openStates[entityID],
-        },
-      }));
+      useUIState.setState((s) => {
+        if (entityID)
+          return {
+            openStates: {
+              ...s.openStates,
+              [entityID]: !s.openStates[entityID],
+            },
+          };
+        return {};
+      });
     },
   },
   {
@@ -471,11 +508,13 @@ const shortcuts: {
     ctrlKey: true,
     shiftKey: true,
     callback: async ({ mutate, entityID }) => {
+      if (!entityID) return;
+      let e = entityID;
       let child = ulid();
       useUIState.setState((s) => ({
         openStates: {
           ...s.openStates,
-          [entityID]: true,
+          [e]: true,
         },
       }));
       await mutate("addChildBlock", {
@@ -491,6 +530,7 @@ const shortcuts: {
     key: "Enter",
     description: "Create a new sibling block",
     callback: async ({ mutate, entityID, rep, transact, start }) => {
+      if (!entityID) return;
       let s = await getSuggestions(rep);
       if (s.suggestions.length > 0) {
         let value = s.suggestions[s.suggestionIndex] || s.suggestions[0];
@@ -531,7 +571,7 @@ const shortcuts: {
     description: "Move block down",
     shiftKey: true,
     callback: async ({ mutate, entityID }) => {
-      await mutate("moveBlockDown", { entityID });
+      if (entityID) await mutate("moveBlockDown", { entityID });
     },
   },
   {
@@ -540,7 +580,7 @@ const shortcuts: {
     description: "Move block up",
     shiftKey: true,
     callback: async ({ mutate, entityID }) => {
-      await mutate("moveBlockUp", { entityID });
+      if (entityID) await mutate("moveBlockUp", { entityID });
     },
   },
   {
@@ -549,7 +589,7 @@ const shortcuts: {
     shiftKey: true,
     description: "Focus parent block",
     callback: async ({ rep, entityID, start, end }) => {
-      if (!rep) return;
+      if (!entityID) return;
 
       let root = useUIState.getState().root;
       let parent = await getParent(entityID, rep);
