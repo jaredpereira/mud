@@ -1,3 +1,6 @@
+import { SVGProps } from "react";
+
+type Props = SVGProps<SVGSVGElement>;
 export const RightArrow = () => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -118,12 +121,13 @@ export const ClockwiseArrow = () => (
   </svg>
 );
 
-export const Caret = () => (
+export const Caret = (props: Props) => (
   <svg
+    {...props}
     xmlns="http://www.w3.org/2000/svg"
     direction="ltr"
-    width="11"
-    height="8"
+    width="8"
+    height="6"
     viewBox="709.29 338.28 221.77 160.92"
     strokeLinecap="round"
     strokeLinejoin="round"
