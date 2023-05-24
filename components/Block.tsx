@@ -36,30 +36,32 @@ export function Block(props: BlockProps) {
   return (
     <div className="flex flex-row gap-0.5">
       <ToggleOpen entityID={props.entityID} count={children.length} />
-      <div
-        style={{
-          borderColor: yanked ? "blue" : blurred ? "#00000040" : "#000000FF",
-          backgroundColor:
-            (props.depth % 2 === 1 ? "#FFE4B5" : "#FFF8DC") +
-            (blurred ? "40" : "FF"),
-        }}
-        className={`w-full rounded-md py-2 pl-1 pr-1 ${
-          focused ? "border-2" : "border"
-        }`}
-      >
-        <div className="pl-1">
-          <BlockContent
-            {...props}
-            firstChild={children[0]?.entity}
-            blurred={blurred}
+      <div className={`w-full ${focused ? "" : "border border-transparent"}`}>
+        <div
+          style={{
+            borderColor: yanked ? "blue" : blurred ? "#00000040" : "#000000FF",
+            backgroundColor:
+              (props.depth % 2 === 1 ? "#FFE4B5" : "#FFF8DC") +
+              (blurred ? "40" : "FF"),
+          }}
+          className={`w-full rounded-md py-2 pl-1 pr-1 ${
+            focused ? "border-2" : "border"
+          }`}
+        >
+          <div className="pl-1">
+            <BlockContent
+              {...props}
+              firstChild={children[0]?.entity}
+              blurred={blurred}
+            />
+          </div>
+          <BlockChildren
+            parentFocused={props.parentFocused || focused}
+            entityID={props.entityID}
+            after={props.after}
+            depth={props.depth}
           />
         </div>
-        <BlockChildren
-          parentFocused={props.parentFocused || focused}
-          entityID={props.entityID}
-          after={props.after}
-          depth={props.depth}
-        />
       </div>
     </div>
   );
