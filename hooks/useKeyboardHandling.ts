@@ -507,16 +507,26 @@ const shortcuts: {
     description: "create new child block",
     ctrlKey: true,
     shiftKey: true,
-    callback: async ({ mutate, entityID }) => {
+    callback: async ({ mutate, entityID, start, value }) => {
       if (!entityID) return;
       let e = entityID;
       let child = ulid();
+      let oldBlockContent = value.slice(0, start);
+      let newBlockContent = value.slice(start);
       useUIState.setState((s) => ({
         openStates: {
           ...s.openStates,
           [e]: true,
         },
       }));
+      await mutate("updateBlockContent", {
+        block: child,
+        content: newBlockContent,
+      });
+      await mutate("updateBlockContent", {
+        block: entityID,
+        content: oldBlockContent,
+      });
       await mutate("addChildBlock", {
         factID: ulid(),
         parent: entityID,
@@ -524,12 +534,26 @@ const shortcuts: {
       });
       useUIState.setState(() => ({ focused: child }));
       document.getElementById(child)?.focus();
+      setTimeout(() => {
+        let el = document.getElementById(child) as
+          | HTMLTextAreaElement
+          | undefined;
+        el?.setSelectionRange(0, 0);
+      }, 10);
     },
   },
   {
     key: "Enter",
     description: "Create a new sibling block",
-    callback: async ({ mutate, entityID, rep, transact, start }) => {
+    callback: async ({
+      mutate,
+      entityID,
+      rep,
+      transact,
+      start,
+      value,
+      action,
+    }) => {
       if (!entityID) return;
       let s = await getSuggestions(rep);
       if (s.suggestions.length > 0) {
@@ -552,17 +576,35 @@ const shortcuts: {
         return;
       }
       let child = ulid();
+      let oldBlockContent = value.slice(0, start);
+      let newBlockContent = value.slice(start);
       let parent = await getParent(entityID, rep);
       if (!parent) return;
+      action.start();
       await mutate("addChildBlock", {
         factID: ulid(),
         parent: useUIState.getState().root === entityID ? entityID : parent,
         after: entityID,
         child,
       });
+      await mutate("updateBlockContent", {
+        block: child,
+        content: newBlockContent,
+      });
+      await mutate("updateBlockContent", {
+        block: entityID,
+        content: oldBlockContent,
+      });
+      action.end();
 
       useUIState.setState(() => ({ focused: child }));
       document.getElementById(child)?.focus();
+      setTimeout(() => {
+        let el = document.getElementById(child) as
+          | HTMLTextAreaElement
+          | undefined;
+        el?.setSelectionRange(0, 0);
+      }, 10);
     },
   },
   {
