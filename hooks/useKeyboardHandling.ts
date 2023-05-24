@@ -10,7 +10,8 @@ import { useMutations } from "./useReplicache";
 import { getLastOpenChild, useUIState } from "./useUIState";
 
 export const useKeyboardHandling = () => {
-  let { mutate, action } = useMutations();
+  let m = useMutations();
+  let { mutate, action } = m;
   let rep = useContext(ReplicacheContext)?.rep;
 
   return useEffect(() => {
@@ -68,6 +69,26 @@ export const useKeyboardHandling = () => {
         }, 10);
         if (undo) action.end();
       };
+      for (let shortcut of shortcuts) {
+        if (
+          shortcut.key === e.key &&
+          !!shortcut.ctrlKey === !!e.ctrlKey &&
+          !!shortcut.shiftKey === !!e.shiftKey
+        ) {
+          e.preventDefault();
+          shortcut.callback({
+            entityID,
+            ref,
+            start,
+            end,
+            value,
+            transact,
+            ...m,
+            rep,
+          });
+          return;
+        }
+      }
 
       switch (e.key) {
         case "Escape": {
@@ -76,101 +97,6 @@ export const useKeyboardHandling = () => {
             useAutocompleteState.setState(() => ({
               suggestionPrefix: undefined,
             }));
-          }
-          break;
-        }
-        case "Enter": {
-          let s = await getSuggestions(rep);
-
-          if (s.suggestions.length > 0) {
-            e.preventDefault();
-
-            let value = s.suggestions[s.suggestionIndex] || s.suggestions[0];
-            if (!value) break;
-            if (!s.suggestionPrefix) break;
-            transact(
-              (text) => {
-                if (!s.suggestionPrefix) return;
-                text.delete(
-                  start - s.suggestionPrefix.length,
-                  s.suggestionPrefix.length
-                );
-                text.insert(start - s.suggestionPrefix.length, value.value);
-              },
-              2 - s.suggestionPrefix.length,
-              true
-            );
-            close();
-            break;
-          }
-          if (e.ctrlKey && !e.shiftKey) {
-            useUIState.setState((s) => ({
-              openStates: {
-                ...s.openStates,
-                [entityID]: !s.openStates[entityID],
-              },
-            }));
-            break;
-          }
-          if (!e.shiftKey || e.ctrlKey) {
-            e.preventDefault();
-            let child = ulid();
-            if (e.ctrlKey) {
-              useUIState.setState((s) => ({
-                openStates: {
-                  ...s.openStates,
-                  [entityID]: true,
-                },
-              }));
-              await mutate("addChildBlock", {
-                factID: ulid(),
-                parent: entityID,
-                child,
-              });
-            } else {
-              let parent = await getParent(entityID, rep);
-              if (!parent) return;
-              await mutate("addChildBlock", {
-                factID: ulid(),
-                parent:
-                  useUIState.getState().root === entityID ? entityID : parent,
-                after: entityID,
-                child,
-              });
-            }
-            useUIState.setState(() => ({ focused: child }));
-            document.getElementById(child)?.focus();
-            break;
-          }
-          break;
-        }
-        case "Tab": {
-          e.preventDefault();
-          let s = await getSuggestions(rep);
-          if (s.suggestions.length > 0) {
-            if (e.shiftKey) {
-              if (s.suggestionIndex > 0) s.setSuggestionIndex((i) => i - 1);
-            } else {
-              if (s.suggestionIndex < s.suggestions.length - 1)
-                s.setSuggestionIndex((i) => i + 1);
-            }
-            break;
-          } else {
-            if (e.shiftKey) {
-              await mutate("outdentBlock", { factID: ulid(), entityID });
-            } else {
-              let previousSibling = await getBefore(entityID, rep);
-              if (!previousSibling) break;
-              let p = previousSibling;
-              useUIState.setState((s) => ({
-                openStates: {
-                  ...s.openStates,
-                  [p]: true,
-                },
-              }));
-              await mutate("indentBlock", { factID: ulid(), entityID });
-            }
-            keepFocus(entityID);
           }
           break;
         }
@@ -224,13 +150,6 @@ export const useKeyboardHandling = () => {
           else ref?.current?.setSelectionRange(value.length, value.length);
           break;
         }
-
-        case "K": {
-          if (!e.ctrlKey) break;
-          e.preventDefault();
-          await mutate("moveBlockUp", { entityID });
-          break;
-        }
         case "k": {
           if (!e.ctrlKey) break;
           let s = await getSuggestions(rep);
@@ -251,12 +170,6 @@ export const useKeyboardHandling = () => {
               if (parent) document.getElementById(parent)?.focus();
             }
           }
-          break;
-        }
-        case "J": {
-          if (!e.ctrlKey) break;
-          e.preventDefault();
-          await mutate("moveBlockDown", { entityID });
           break;
         }
         case "j": {
@@ -287,44 +200,7 @@ export const useKeyboardHandling = () => {
           if (e.ctrlKey) {
             e.preventDefault();
             useUIState.getState().setRoot(entityID);
-            keepFocus(entityID);
-          }
-          break;
-        }
-
-        case "H": {
-          if (e.ctrlKey) {
-            e.preventDefault();
-            let root = useUIState.getState().root;
-            let parent = await getParent(entityID, rep);
-            if (root === entityID) {
-              if (
-                parent ===
-                (await rep?.query((tx) => scanIndex(tx).aev("home")))?.[0]
-                  ?.entity
-              )
-                useUIState.getState().setRoot(undefined);
-              else {
-                useUIState.getState().setRoot(parent);
-                useUIState.getState().setFocused(parent);
-              }
-              keepFocus(entityID);
-            }
-            if (parent) document.getElementById(parent)?.focus();
-          }
-          break;
-        }
-        case "o": {
-          if (e.ctrlKey) {
-            e.preventDefault();
-            useUIState.getState().setOpen(entityID, true);
-          }
-          break;
-        }
-        case "c": {
-          if (e.ctrlKey) {
-            e.preventDefault();
-            useUIState.getState().setOpen(entityID, false);
+            keepFocus(entityID, start, end);
           }
           break;
         }
@@ -373,22 +249,24 @@ export const useKeyboardHandling = () => {
               },
               redo: () => {},
             });
-            await mutate("deleteBlock", { entity: entityID });
             useUIState.setState((s) => {
               if (s.root === entityID) return { root: undefined };
               return {};
             });
             action.end();
             let id: string | undefined;
-            let previousSibling = await getBefore(entityID);
+            let previousSibling = await getBefore(entityID, rep);
             if (previousSibling) {
               let p = previousSibling;
               if (!rep) return;
               id = await rep.query((tx) => getLastOpenChild(tx, p));
             } else {
-              id = await getParent(entityID);
+              id = await getParent(entityID, rep);
             }
+
+            await mutate("deleteBlock", { entity: entityID });
             if (id) document.getElementById(id)?.focus();
+
             setTimeout(() => {
               if (!id) return;
               let el = document.getElementById(id);
@@ -472,6 +350,183 @@ export const useKeyboardHandling = () => {
   }, [rep]);
 };
 
+const shortcuts: {
+  key: string;
+  ctrlKey?: boolean;
+  altKey?: boolean;
+  shiftKey?: boolean;
+  description: string;
+  callback: (
+    ctx: {
+      entityID: string;
+      ref: { current?: HTMLTextAreaElement };
+      start: number;
+      end: number;
+      value: string;
+      transact: (
+        transaction: Transaction,
+        offset: number,
+        undo?: boolean
+      ) => void;
+    } & ReturnType<typeof useMutations>
+  ) => void;
+}[] = [
+  {
+    key: "Tab",
+    description: "Indent block",
+    callback: async ({ entityID, rep, mutate }) => {
+      let s = await getSuggestions(rep);
+      if (
+        s.suggestions.length > 0 &&
+        s.suggestionIndex < s.suggestions.length - 1
+      ) {
+        s.setSuggestionIndex((i) => i + 1);
+        return;
+      }
+      let previousSibling = await getBefore(entityID, rep);
+      if (!previousSibling) return;
+      let p = previousSibling;
+      useUIState.setState((s) => ({
+        openStates: {
+          ...s.openStates,
+          [p]: true,
+        },
+      }));
+      await mutate("indentBlock", { factID: ulid(), entityID });
+    },
+  },
+
+  {
+    key: "Tab",
+    shiftKey: true,
+    description: "Outdent block",
+    callback: async ({ entityID, mutate, rep }) => {
+      let s = await getSuggestions(rep);
+      if (s.suggestions.length > 0 && s.suggestionIndex > 0) {
+        s.setSuggestionIndex((i) => i - 1);
+        return;
+      }
+      await mutate("outdentBlock", { factID: ulid(), entityID });
+    },
+  },
+  {
+    key: "Enter",
+    description: "Expand or collapse children",
+    ctrlKey: true,
+    callback: ({ entityID }) => {
+      useUIState.setState((s) => ({
+        openStates: {
+          ...s.openStates,
+          [entityID]: !s.openStates[entityID],
+        },
+      }));
+    },
+  },
+  {
+    key: "Enter",
+    description: "create new child block",
+    ctrlKey: true,
+    shiftKey: true,
+    callback: async ({ mutate, entityID }) => {
+      let child = ulid();
+      useUIState.setState((s) => ({
+        openStates: {
+          ...s.openStates,
+          [entityID]: true,
+        },
+      }));
+      await mutate("addChildBlock", {
+        factID: ulid(),
+        parent: entityID,
+        child,
+      });
+      useUIState.setState(() => ({ focused: child }));
+      document.getElementById(child)?.focus();
+    },
+  },
+  {
+    key: "Enter",
+    description: "Create a new sibling block",
+    callback: async ({ mutate, entityID, rep, transact, start }) => {
+      let s = await getSuggestions(rep);
+      if (s.suggestions.length > 0) {
+        let value = s.suggestions[s.suggestionIndex] || s.suggestions[0];
+        if (!value) return;
+        if (!s.suggestionPrefix) return;
+        transact(
+          (text) => {
+            if (!s.suggestionPrefix) return;
+            text.delete(
+              start - s.suggestionPrefix.length,
+              s.suggestionPrefix.length
+            );
+            text.insert(start - s.suggestionPrefix.length, value.value);
+          },
+          2 - s.suggestionPrefix.length,
+          true
+        );
+        useAutocompleteState.getState().setSuggestionPrefix(undefined);
+        return;
+      }
+      let child = ulid();
+      let parent = await getParent(entityID, rep);
+      if (!parent) return;
+      await mutate("addChildBlock", {
+        factID: ulid(),
+        parent: useUIState.getState().root === entityID ? entityID : parent,
+        after: entityID,
+        child,
+      });
+
+      useUIState.setState(() => ({ focused: child }));
+      document.getElementById(child)?.focus();
+    },
+  },
+  {
+    key: "J",
+    ctrlKey: true,
+    description: "Move block down",
+    shiftKey: true,
+    callback: async ({ mutate, entityID }) => {
+      await mutate("moveBlockDown", { entityID });
+    },
+  },
+  {
+    key: "K",
+    ctrlKey: true,
+    description: "Move block up",
+    shiftKey: true,
+    callback: async ({ mutate, entityID }) => {
+      await mutate("moveBlockUp", { entityID });
+    },
+  },
+  {
+    key: "H",
+    ctrlKey: true,
+    shiftKey: true,
+    description: "Focus parent block",
+    callback: async ({ rep, entityID, start, end }) => {
+      if (!rep) return;
+
+      let root = useUIState.getState().root;
+      let parent = await getParent(entityID, rep);
+      if (root === entityID) {
+        if (
+          parent ===
+          (await rep?.query((tx) => scanIndex(tx).aev("home")))?.[0]?.entity
+        )
+          useUIState.getState().setRoot(undefined);
+        else {
+          useUIState.getState().setRoot(parent);
+          useUIState.getState().setFocused(parent);
+        }
+        keepFocus(entityID, start, end);
+      }
+      if (parent) document.getElementById(parent)?.focus();
+    },
+  },
+];
+
 async function getSuggestions(rep: Replicache | undefined) {
   let state = useAutocompleteState.getState();
   let suggestions: Fact<"block/unique-name">[] = [];
@@ -489,13 +544,17 @@ async function getSuggestions(rep: Replicache | undefined) {
     ...state,
   };
 }
+
 async function getFirstChild(entityID: string, rep: Replicache | undefined) {
   if (!rep) return undefined;
   return (
     await rep.query((tx) => scanIndex(tx).vae(entityID, "block/parent"))
   ).sort(sortByPosition)[0]?.entity;
 }
-async function getAfter(entityID: string, rep: Replicache | undefined) {
+async function getAfter(
+  entityID: string,
+  rep: Replicache | undefined
+): Promise<string | undefined> {
   if (!rep) return;
   let parent = await rep.query((tx) =>
     scanIndex(tx).eav(entityID, "block/parent")
@@ -507,7 +566,8 @@ async function getAfter(entityID: string, rep: Replicache | undefined) {
   ).sort(sortByPosition);
   let index = siblings.findIndex((s) => s.entity === entityID);
   if (index === -1) return;
-  return siblings[index + 1].entity;
+  if (index === siblings.length - 1) return getAfter(parentEntity, rep);
+  return siblings[index + 1]?.entity;
 }
 async function getParent(entityID: string, rep: Replicache | undefined) {
   if (!rep) return;
@@ -515,7 +575,7 @@ async function getParent(entityID: string, rep: Replicache | undefined) {
     scanIndex(tx).eav(entityID, "block/parent")
   );
   if (!parent) return;
-  return parent.entity;
+  return parent.value.value;
 }
 async function getBefore(entityID: string, rep: Replicache | undefined) {
   if (!rep) return;
@@ -529,9 +589,9 @@ async function getBefore(entityID: string, rep: Replicache | undefined) {
   ).sort(sortByPosition);
   let index = siblings.findIndex((s) => s.entity === entityID);
   if (index === -1) return;
-  return siblings[index - 1].entity;
+  return siblings[index - 1]?.entity;
 }
-function keepFocus(entityID: string) {
+function keepFocus(entityID: string, start: number, end: number) {
   document.getElementById(entityID)?.focus();
   setTimeout(() => {
     document
