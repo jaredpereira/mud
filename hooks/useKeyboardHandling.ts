@@ -1,6 +1,7 @@
 import { useAutocompleteState } from "components/Autocomplete";
 import { ReplicacheContext } from "components/ReplicacheProvider";
 import { Fact } from "data/Facts";
+import { off } from "process";
 import { useContext, useEffect } from "react";
 import { Replicache } from "replicache";
 import { generateKeyBetween } from "src/fractional-indexing";
@@ -32,7 +33,7 @@ export const useKeyboardHandling = () => {
       };
       let transact = async (
         transaction: Transaction,
-        offset: number = 0,
+        offset: [number, number] = [0, 0],
         undo?: boolean
       ) => {
         if (!entityID) return;
@@ -53,8 +54,8 @@ export const useKeyboardHandling = () => {
             redo: () => {
               setTimeout(() => {
                 ref?.current?.setSelectionRange(
-                  cursors[0] + offset,
-                  cursors[1] + offset
+                  cursors[0] + offset[0],
+                  cursors[1] + offset[1]
                 );
               }, 10);
             },
@@ -65,8 +66,8 @@ export const useKeyboardHandling = () => {
         });
         setTimeout(() => {
           ref?.current?.setSelectionRange(
-            cursors[0] + offset,
-            cursors[1] + offset
+            cursors[0] + offset[0],
+            cursors[1] + offset[1]
           );
         }, 10);
         if (undo) action.end();
@@ -243,9 +244,12 @@ export const useKeyboardHandling = () => {
             start === end
           ) {
             e.preventDefault();
-            transact((text) => {
-              text.delete(start - 1, 2);
-            }, -1);
+            transact(
+              (text) => {
+                text.delete(start - 1, 2);
+              },
+              [-1, -1]
+            );
             break;
           }
           if (
@@ -254,9 +258,12 @@ export const useKeyboardHandling = () => {
             start === end
           ) {
             e.preventDefault();
-            transact((text) => {
-              text.delete(start - 1, 2);
-            }, -1);
+            transact(
+              (text) => {
+                text.delete(start - 1, 2);
+              },
+              [-1, -1]
+            );
             break;
           }
 
@@ -266,9 +273,12 @@ export const useKeyboardHandling = () => {
             start === end
           ) {
             e.preventDefault();
-            transact((text) => {
-              text.delete(start - 2, 2);
-            }, -2);
+            transact(
+              (text) => {
+                text.delete(start - 2, 2);
+              },
+              [-2, -2]
+            );
             break;
           }
           if (value === "") {
@@ -310,22 +320,28 @@ export const useKeyboardHandling = () => {
         }
         case "i": {
           if (!e.ctrlKey) break;
-          if (start !== end) {
-            transact((text) => {
+          e.preventDefault();
+          transact(
+            (text) => {
               text.insert(start, "*");
               text.insert(end + 1, "*");
-            });
-          }
+            },
+            [0, 1],
+            true
+          );
           break;
         }
         case "b": {
           if (!e.ctrlKey) break;
-          if (start !== end) {
-            transact((text) => {
+          e.preventDefault();
+          transact(
+            (text) => {
               text.insert(start, "**");
               text.insert(end + 2, "**");
-            });
-          }
+            },
+            [0, 2],
+            true
+          );
           break;
         }
         case "*": {
@@ -341,9 +357,12 @@ export const useKeyboardHandling = () => {
               e.preventDefault();
               ref?.current?.setSelectionRange(start + 1, start + 1);
             } else
-              transact((text) => {
-                text.insert(start, "**");
-              }, 1);
+              transact(
+                (text) => {
+                  text.insert(start, "**");
+                },
+                [1, 1]
+              );
           }
           break;
         }
@@ -356,9 +375,12 @@ export const useKeyboardHandling = () => {
               text.insert(end + 1, "]");
             });
           } else {
-            transact((text) => {
-              text.insert(start, "[]");
-            }, 1);
+            transact(
+              (text) => {
+                text.insert(start, "[]");
+              },
+              [1, 1]
+            );
           }
           break;
         }
@@ -396,7 +418,7 @@ const shortcuts: {
       value: string;
       transact: (
         transaction: Transaction,
-        offset: number,
+        offset: [number, number],
         undo?: boolean
       ) => void;
     } & ReturnType<typeof useMutations>
@@ -569,7 +591,7 @@ const shortcuts: {
             );
             text.insert(start - s.suggestionPrefix.length, value.value);
           },
-          2 - s.suggestionPrefix.length,
+          [2 - s.suggestionPrefix.length, 2 - s.setSuggestionPrefix.length],
           true
         );
         useAutocompleteState.getState().setSuggestionPrefix(undefined);
