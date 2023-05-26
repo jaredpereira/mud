@@ -44,11 +44,6 @@ export const DefaultAttributes = {
     unique: false,
     cardinality: "one",
   },
-  "space/root-block": {
-    type: "string",
-    unique: false,
-    cardinality: "one",
-  },
   "block/unique-name": {
     type: "string",
     unique: true,
@@ -62,11 +57,6 @@ export const DefaultAttributes = {
   },
   "block/parent": {
     type: "parent",
-    unique: false,
-    cardinality: "one",
-  },
-  "block/inline-link": {
-    type: "reference",
     unique: false,
     cardinality: "one",
   },
