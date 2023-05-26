@@ -18,6 +18,7 @@ export const useKeyboardHandling = () => {
 
   return useEffect(() => {
     let cb = async (e: KeyboardEvent) => {
+      console.log(e);
       let entity = useUIState.getState().focused;
       let entityID = entity;
       if (!rep) return;
@@ -508,10 +509,11 @@ const shortcuts: {
     },
   },
   {
-    key: "Enter",
+    key: " ",
     description: "Expand or collapse children",
     ctrlKey: true,
     callback: ({ entityID }) => {
+      console.log("yo");
       useUIState.setState((s) => {
         if (entityID)
           return {
@@ -522,6 +524,26 @@ const shortcuts: {
           };
         return {};
       });
+    },
+  },
+  {
+    key: "Enter",
+    description: "Add a sibling block",
+    ctrlKey: true,
+    callback: async ({ entityID, mutate, rep }) => {
+      if (!entityID) return;
+      let child = ulid();
+
+      let parent = await getParent(entityID, rep);
+      if (!parent) return;
+      await mutate("addChildBlock", {
+        factID: ulid(),
+        parent: parent,
+        child,
+        after: entityID,
+      });
+      useUIState.setState(() => ({ focused: child }));
+      document.getElementById(child)?.focus();
     },
   },
   {
@@ -566,7 +588,7 @@ const shortcuts: {
   },
   {
     key: "Enter",
-    description: "Create a new sibling block",
+    description: "Create a new sibling block, splitting the current block",
     callback: async ({
       mutate,
       entityID,
