@@ -282,8 +282,7 @@ export const useKeyboardHandling = () => {
             );
             break;
           }
-          if (value === "") {
-            e.preventDefault();
+          if (start === 0 && end === 0) {
             action.start();
             action.add({
               undo: async () => {
@@ -291,30 +290,46 @@ export const useKeyboardHandling = () => {
               },
               redo: () => {},
             });
+
             useUIState.setState((s) => {
               if (s.root === entityID) return { root: undefined };
               return {};
             });
-            action.end();
-            let id: string | undefined;
+
+            let id: string;
             let previousSibling = await getBefore(entityID, rep);
             if (previousSibling) {
               let p = previousSibling;
-              if (!rep) return;
               id = await rep.query((tx) => getLastOpenChild(tx, p));
             } else {
-              id = await getParent(entityID, rep);
+              let parent = await getParent(entityID, rep);
+              if (!parent) {
+                return await mutate("deleteBlock", { entity: entityID });
+              }
+              id = parent;
             }
 
+            e.preventDefault();
+            let content = await rep.query((tx) =>
+              scanIndex(tx).eav(id, "block/content")
+            );
+            if (content) {
+              let len = content.value.length;
+              await mutate("updateBlockContent", {
+                block: id,
+                content: content.value + value,
+              });
+              setTimeout(() => {
+                let el = document.getElementById(id) as
+                  | HTMLTextAreaElement
+                  | undefined;
+                el?.setSelectionRange?.(len, len);
+              }, 10);
+            }
             await mutate("deleteBlock", { entity: entityID });
-            if (id) document.getElementById(id)?.focus();
 
-            setTimeout(() => {
-              if (!id) return;
-              let el = document.getElementById(id);
-              //@ts-ignore
-              el?.setSelectionRange?.(el.value.length, el.value.length);
-            }, 10);
+            document.getElementById(id)?.focus();
+            action.end();
           }
 
           break;
