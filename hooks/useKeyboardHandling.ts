@@ -1,7 +1,6 @@
 import { useAutocompleteState } from "components/Autocomplete";
 import { ReplicacheContext } from "components/ReplicacheProvider";
 import { Fact } from "data/Facts";
-import { off } from "process";
 import { useContext, useEffect } from "react";
 import { Replicache } from "replicache";
 import { generateKeyBetween } from "src/fractional-indexing";
@@ -466,6 +465,23 @@ const shortcuts: {
     },
   },
   {
+    key: "Tab",
+    shiftKey: true,
+    description: "Outdent block",
+    callback: async ({ entityID, mutate, rep }) => {
+      if (!entityID) return;
+      let s = await getSuggestions(rep);
+      if (s.suggestions.length > 0 && s.suggestionIndex > 0) {
+        s.setSuggestionIndex((i) => i - 1);
+        return;
+      }
+      useUIState.setState((s) => ({
+        openStates: { ...s.openStates, [entityID]: true },
+      }));
+      await mutate("outdentBlock", { factID: ulid(), entityID });
+    },
+  },
+  {
     key: "y",
     ctrlKey: true,
     description: "Yank (cut) a block",
@@ -507,20 +523,6 @@ const shortcuts: {
           ),
         },
       });
-    },
-  },
-  {
-    key: "Tab",
-    shiftKey: true,
-    description: "Outdent block",
-    callback: async ({ entityID, mutate, rep }) => {
-      if (!entityID) return;
-      let s = await getSuggestions(rep);
-      if (s.suggestions.length > 0 && s.suggestionIndex > 0) {
-        s.setSuggestionIndex((i) => i - 1);
-        return;
-      }
-      await mutate("outdentBlock", { factID: ulid(), entityID });
     },
   },
   {
