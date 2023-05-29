@@ -566,26 +566,9 @@ const shortcuts: {
     description: "create new child block",
     ctrlKey: true,
     shiftKey: true,
-    callback: async ({ mutate, entityID, start, value }) => {
+    callback: async ({ mutate, entityID }) => {
       if (!entityID) return;
-      let e = entityID;
       let child = ulid();
-      let oldBlockContent = value.slice(0, start);
-      let newBlockContent = value.slice(start);
-      useUIState.setState((s) => ({
-        openStates: {
-          ...s.openStates,
-          [e]: true,
-        },
-      }));
-      await mutate("updateBlockContent", {
-        block: child,
-        content: newBlockContent,
-      });
-      await mutate("updateBlockContent", {
-        block: entityID,
-        content: oldBlockContent,
-      });
       await mutate("addChildBlock", {
         factID: ulid(),
         parent: entityID,
