@@ -482,6 +482,28 @@ const shortcuts: {
     },
   },
   {
+    key: "G",
+    description: "focus the last block",
+    ctrlKey: true,
+    shiftKey: true,
+    callback: async ({ rep }) => {
+      let root = useUIState.getState().root;
+      if (!root) {
+        let home = await rep?.query((tx) => scanIndex(tx).aev("home"));
+        if (!home?.[0]) return;
+        root = home[0].entity;
+      }
+      let r = root;
+      let children =
+        (await rep?.query((tx) => scanIndex(tx).vae(r, "block/parent"))) || [];
+      let last = children.sort(sortByPosition)[children.length - 1];
+      if (last) {
+        document.getElementById(last.entity)?.scrollIntoView();
+        useUIState.setState({ focused: last.entity });
+      }
+    },
+  },
+  {
     key: "y",
     ctrlKey: true,
     description: "Yank (cut) a block",
