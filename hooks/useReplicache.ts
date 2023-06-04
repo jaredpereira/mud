@@ -114,6 +114,7 @@ export const useSpaceID = () => {
   return useContext(ReplicacheContext)?.id;
 };
 
+let isGrouping = false;
 export const useMutations = () => {
   let rep = useContext(ReplicacheContext);
   let mutate = useCallback(
@@ -127,10 +128,14 @@ export const useMutations = () => {
   );
   let action = useMemo(
     () => ({
+      isGrouping: () => isGrouping,
       start() {
+        if (isGrouping) return;
+        isGrouping = true;
         rep?.undoManager.startGroup();
       },
       end() {
+        isGrouping = false;
         rep?.undoManager.endGroup();
       },
       add(opts: {
