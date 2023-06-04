@@ -3,33 +3,40 @@ import { ReadTransaction } from "replicache";
 import { scanIndex } from "src/replicache";
 import { sortByPosition } from "src/utils";
 import { create } from "zustand";
-import { combine } from "zustand/middleware";
+import { combine, persist, createJSONStorage } from "zustand/middleware";
 
 export let useUIState = create(
-  combine(
-    {
-      yankedBlock: undefined as string | undefined,
-      root: undefined as string | undefined,
-      openStates: {} as Record<string, boolean>,
-      focusedBlockTextarea: null,
-      mode: "normal",
-      focusMode: false,
-      focused: undefined as string | undefined,
-    },
-    (set) => ({
-      setRoot: (id: string | undefined) => {
-        let query = { ...Router.query, root: id };
-        Router.push({ query }, undefined, {
-          shallow: true,
-        });
+  persist(
+    combine(
+      {
+        yankedBlock: undefined as string | undefined,
+        root: undefined as string | undefined,
+        openStates: {} as Record<string, boolean>,
+        focusedBlockTextarea: null,
+        mode: "normal",
+        focusMode: false,
+        focused: undefined as string | undefined,
       },
-      setFocused: (id: string | undefined) => set({ focused: id }),
+      (set) => ({
+        setRoot: (id: string | undefined) => {
+          let query = { ...Router.query, root: id };
+          Router.push({ query }, undefined, {
+            shallow: true,
+          });
+        },
+        setFocused: (id: string | undefined) => set({ focused: id }),
 
-      setOpen: (entity: string, open: boolean) =>
-        set((s) => ({
-          openStates: { ...s.openStates, [entity]: open },
-        })),
-    })
+        setOpen: (entity: string, open: boolean) =>
+          set((s) => ({
+            openStates: { ...s.openStates, [entity]: open },
+          })),
+      })
+    ),
+    {
+      name: "uninitialized",
+      skipHydration: true,
+      storage: createJSONStorage(() => sessionStorage),
+    }
   )
 );
 

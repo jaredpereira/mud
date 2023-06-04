@@ -14,6 +14,10 @@ import { useKeyboardHandling } from "hooks/useKeyboardHandling";
 export default function StudioPage() {
   let { query } = useRouter();
   useEffect(() => {
+    useUIState.persist.setOptions({ name: query.space as string });
+    useUIState.persist.rehydrate();
+  }, [query.space]);
+  useEffect(() => {
     useUIState.setState({ root: query.root as string });
   }, [query.root]);
   return (
