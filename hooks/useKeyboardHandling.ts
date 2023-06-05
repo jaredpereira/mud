@@ -153,88 +153,6 @@ export const useKeyboardHandling = () => {
           else ref?.current?.setSelectionRange(value.length, value.length);
           break;
         }
-        case "k": {
-          if (!e.ctrlKey) break;
-          let s = await getSuggestions(rep);
-          if (s.suggestions.length > 0) {
-            e.preventDefault();
-            if (s.suggestionIndex > 0) s.setSuggestionIndex((i) => i - 1);
-            break;
-          } else {
-            e.preventDefault();
-            if (!entityID) {
-              let root =
-                useUIState.getState().root ||
-                (await rep.query((tx) => scanIndex(tx).aev("home")))[0]?.entity;
-              if (!root) return;
-              let children = await rep.query((tx) =>
-                scanIndex(tx).vae(root, "block/parent")
-              );
-              let lastchild =
-                children.sort(sortByPosition)[children.length - 1]?.entity;
-
-              document.getElementById(lastchild)?.focus();
-              return;
-            }
-            let previousSibling = await getBefore(entityID, rep);
-            if (previousSibling) {
-              let p = previousSibling;
-              if (!rep) return;
-              let lastchild = await rep.query((tx) => getLastOpenChild(tx, p));
-              document.getElementById(lastchild)?.focus();
-            } else {
-              let parent = await getParent(entityID, rep);
-              if (parent) document.getElementById(parent)?.focus();
-            }
-          }
-          break;
-        }
-        case "j": {
-          if (!e.ctrlKey) break;
-          let s = await getSuggestions(rep);
-          if (s.suggestions.length > 0) {
-            e.preventDefault();
-            if (s.suggestionIndex < s.suggestions.length - 1)
-              s.setSuggestionIndex((i) => i + 1);
-            break;
-          } else {
-            e.preventDefault();
-            if (!entityID) {
-              let root =
-                useUIState.getState().root ||
-                (await rep.query((tx) => scanIndex(tx).aev("home")))[0]?.entity;
-              if (!root) return;
-              let children = await rep.query((tx) =>
-                scanIndex(tx).vae(root, "block/parent")
-              );
-              let firstChild = children.sort(sortByPosition)[0]?.entity;
-
-              document.getElementById(firstChild)?.focus();
-              return;
-            }
-            let firstChild = await getFirstChild(entityID, rep);
-            if (
-              firstChild &&
-              (useUIState.getState().openStates[entityID] ||
-                useUIState.getState().root === entityID)
-            )
-              document.getElementById(firstChild)?.focus();
-            else {
-              let after = await getAfter(entityID, rep);
-              if (after) document.getElementById(after)?.focus();
-            }
-          }
-          break;
-        }
-        case ":": {
-          if (e.ctrlKey) {
-            e.preventDefault();
-            if (!entityID) return;
-            useUIState.getState().setRoot(entityID);
-            keepFocus(entityID, start, end);
-          }
-          break;
-        }
 
         case "Backspace": {
           if (!entityID) return;
@@ -418,7 +336,7 @@ export const useKeyboardHandling = () => {
   }, [rep]);
 };
 
-const shortcuts: {
+export const shortcuts: {
   key: string;
   ctrlKey?: boolean;
   altKey?: boolean;
@@ -439,6 +357,16 @@ const shortcuts: {
     } & ReturnType<typeof useMutations>
   ) => void;
 }[] = [
+  {
+    key: ":",
+    ctrlKey: true,
+    description: "Zoom into current block",
+    callback: ({ entityID, start, end }) => {
+      if (!entityID) return;
+      useUIState.getState().setRoot(entityID);
+      keepFocus(entityID, start, end);
+    },
+  },
   {
     key: "Tab",
     description: "Indent block",
@@ -671,6 +599,82 @@ const shortcuts: {
           | undefined;
         el?.setSelectionRange(0, 0);
       }, 10);
+    },
+  },
+  {
+    key: "j",
+    ctrlKey: true,
+    description: "Focus next block",
+    callback: async ({ rep, entityID }) => {
+      if (!rep) return;
+      let s = await getSuggestions(rep);
+      if (s.suggestions.length > 0) {
+        if (s.suggestionIndex < s.suggestions.length - 1)
+          s.setSuggestionIndex((i) => i + 1);
+        return;
+      }
+      if (!entityID) {
+        let root =
+          useUIState.getState().root ||
+          (await rep.query((tx) => scanIndex(tx).aev("home")))[0]?.entity;
+        if (!root) return;
+        let children = await rep.query((tx) =>
+          scanIndex(tx).vae(root, "block/parent")
+        );
+        let firstChild = children.sort(sortByPosition)[0]?.entity;
+
+        document.getElementById(firstChild)?.focus();
+        return;
+      }
+      let firstChild = await getFirstChild(entityID, rep);
+      if (
+        firstChild &&
+        (useUIState.getState().openStates[entityID] ||
+          useUIState.getState().root === entityID)
+      )
+        document.getElementById(firstChild)?.focus();
+      else {
+        let after = await getAfter(entityID, rep);
+        if (after) document.getElementById(after)?.focus();
+      }
+    },
+  },
+  {
+    key: "k",
+    ctrlKey: true,
+    description: "focus previous block",
+    callback: async ({ rep, entityID }) => {
+      if (!rep) return;
+      let s = await getSuggestions(rep);
+      if (s.suggestions.length > 0) {
+        if (s.suggestionIndex > 0) s.setSuggestionIndex((i) => i - 1);
+        return;
+      }
+
+      if (!entityID) {
+        let root =
+          useUIState.getState().root ||
+          (await rep.query((tx) => scanIndex(tx).aev("home")))[0]?.entity;
+        if (!root) return;
+        let children = await rep.query((tx) =>
+          scanIndex(tx).vae(root, "block/parent")
+        );
+        let lastchild =
+          children.sort(sortByPosition)[children.length - 1]?.entity;
+
+        document.getElementById(lastchild)?.focus();
+        return;
+      }
+      let previousSibling = await getBefore(entityID, rep);
+      if (previousSibling) {
+        let p = previousSibling;
+        if (!rep) return;
+        let lastchild = await rep.query((tx) => getLastOpenChild(tx, p));
+        document.getElementById(lastchild)?.focus();
+      } else {
+        let parent = await getParent(entityID, rep);
+        if (parent) document.getElementById(parent)?.focus();
+      }
     },
   },
   {

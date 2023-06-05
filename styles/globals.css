@@ -94,6 +94,11 @@ a {
   color: inherit;
   text-decoration: none;
 }
+kbd {
+  @apply bg-grey-80;
+  @apply border;
+  @apply border p-1;
+}
 
 pre {
   font-family: "Quattro" !important;
