@@ -75,7 +75,7 @@ export const useKeyboardHandling = () => {
       for (let shortcut of shortcuts) {
         if (
           shortcut.key === e.key &&
-          !!shortcut.ctrlKey === !!e.ctrlKey &&
+          !!shortcut.ctrlKey === (!!e.ctrlKey || !!e.metaKey) &&
           !!shortcut.shiftKey === !!e.shiftKey
         ) {
           e.preventDefault();
