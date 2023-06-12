@@ -17,7 +17,6 @@ export const useKeyboardHandling = () => {
 
   return useEffect(() => {
     let cb = async (e: KeyboardEvent) => {
-      console.log(e);
       let entity = useUIState.getState().focused;
       let entityID = entity;
       if (!rep) return;
@@ -627,15 +626,27 @@ export const shortcuts: {
         return;
       }
       let firstChild = await getFirstChild(entityID, rep);
+      let entity: string | undefined;
       if (
         firstChild &&
         (useUIState.getState().openStates[entityID] ||
           useUIState.getState().root === entityID)
       )
-        document.getElementById(firstChild)?.focus();
+        entity = firstChild;
       else {
         let after = await getAfter(entityID, rep);
-        if (after) document.getElementById(after)?.focus();
+        entity = after;
+      }
+      if (entity) {
+        document.getElementById(entity)?.focus();
+
+        setTimeout(() => {
+          if (!entity) return;
+          let el = document.getElementById(entity) as
+            | HTMLTextAreaElement
+            | undefined;
+          el?.setSelectionRange(el.value.length, el.value.length);
+        }, 5);
       }
     },
   },
@@ -665,15 +676,26 @@ export const shortcuts: {
         document.getElementById(lastchild)?.focus();
         return;
       }
+      let entity: string | undefined;
       let previousSibling = await getBefore(entityID, rep);
       if (previousSibling) {
         let p = previousSibling;
         if (!rep) return;
-        let lastchild = await rep.query((tx) => getLastOpenChild(tx, p));
-        document.getElementById(lastchild)?.focus();
+        entity = await rep.query((tx) => getLastOpenChild(tx, p));
       } else {
-        let parent = await getParent(entityID, rep);
-        if (parent) document.getElementById(parent)?.focus();
+        entity = await getParent(entityID, rep);
+      }
+
+      if (entity) {
+        document.getElementById(entity)?.focus();
+
+        setTimeout(() => {
+          if (!entity) return;
+          let el = document.getElementById(entity) as
+            | HTMLTextAreaElement
+            | undefined;
+          el?.setSelectionRange(el.value.length, el.value.length);
+        }, 5);
       }
     },
   },
