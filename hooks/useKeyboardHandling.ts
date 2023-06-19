@@ -359,6 +359,7 @@ export const shortcuts: {
   {
     key: ":",
     ctrlKey: true,
+    shiftKey: true,
     description: "Zoom into current block",
     callback: ({ entityID, start, end }) => {
       if (!entityID) return;
