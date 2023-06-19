@@ -640,13 +640,13 @@ export const shortcuts: {
       if (entity) {
         document.getElementById(entity)?.focus();
 
-        setTimeout(() => {
+        requestAnimationFrame(() => {
           if (!entity) return;
           let el = document.getElementById(entity) as
             | HTMLTextAreaElement
             | undefined;
           el?.setSelectionRange(el.value.length, el.value.length);
-        }, 5);
+        });
       }
     },
   },
@@ -689,13 +689,13 @@ export const shortcuts: {
       if (entity) {
         document.getElementById(entity)?.focus();
 
-        setTimeout(() => {
+        requestAnimationFrame(() => {
           if (!entity) return;
           let el = document.getElementById(entity) as
             | HTMLTextAreaElement
             | undefined;
           el?.setSelectionRange(el.value.length, el.value.length);
-        }, 5);
+        });
       }
     },
   },
