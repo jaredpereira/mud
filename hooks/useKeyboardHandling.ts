@@ -651,7 +651,7 @@ export const shortcuts: {
           let el = document.getElementById(entity) as
             | HTMLTextAreaElement
             | undefined;
-          el?.setSelectionRange(el.value.length, el.value.length);
+          el?.setSelectionRange(el.value?.length, el.value?.length);
         });
       }
     },
