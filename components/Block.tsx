@@ -66,7 +66,7 @@ export function Block(props: BlockProps) {
   );
 }
 
-function BlockBacklinks(props: { entityID: string }) {
+export function BlockBacklinks(props: { entityID: string }) {
   let [open, setOpen] = useState(false);
   let backlinks = db.useReference(props.entityID, "block/inline-link-to");
   if (backlinks.length === 0) return null;

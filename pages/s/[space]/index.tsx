@@ -1,4 +1,4 @@
-import { Block, BlockContent } from "components/Block";
+import { Block, BlockBacklinks, BlockContent } from "components/Block";
 import { Header } from "components/Header";
 import { SpaceProvider } from "components/ReplicacheProvider";
 import { Toolbar } from "components/Toolbar";
@@ -85,6 +85,7 @@ const RootBlock = (props: { entityID: string; firstchild?: string }) => {
           parentFocused={false}
           blurred={false}
         />
+        <BlockBacklinks entityID={props.entityID} />
       </>
     )
   );
