@@ -34,34 +34,31 @@ export function Block(props: BlockProps) {
     inFocusMode && !focused && !props.parentFocused && !childFocused;
 
   return (
-    <div className="flex flex-row gap-0.5">
-      <ToggleOpen entityID={props.entityID} count={children.length} />
-      <div className={`w-full ${focused ? "" : "border border-transparent"}`}>
-        <div
-          style={{
-            borderColor: yanked ? "blue" : blurred ? "#00000040" : "#000000FF",
-            backgroundColor:
-              (props.depth % 2 === 1 ? "#FFE4B5" : "#FFF8DC") +
-              (blurred ? "40" : "FF"),
-          }}
-          className={`w-full rounded-md py-2 pl-1 pr-1 ${
-            focused ? "border-2" : "border"
+    <div className={`w-full ${focused ? "" : "border border-transparent"}`}>
+      <div
+        style={{
+          borderColor: yanked ? "blue" : blurred ? "#00000040" : "#000000FF",
+          backgroundColor:
+            (props.depth % 2 === 1 ? "#FFE4B5" : "#FFF8DC") +
+            (blurred ? "40" : "FF"),
+        }}
+        className={`w-full rounded-md py-2 pl-1 pr-1 ${focused ? "border-2" : "border"
           }`}
-        >
-          <div className="pl-1">
-            <BlockContent
-              {...props}
-              firstChild={children[0]?.entity}
-              blurred={blurred}
-            />
-          </div>
-          <BlockChildren
-            parentFocused={props.parentFocused || focused}
-            entityID={props.entityID}
-            after={props.after}
-            depth={props.depth}
+      >
+        <div className="flex flex-row gap-1 pl-0.5">
+          <ToggleOpen entityID={props.entityID} count={children.length} />
+          <BlockContent
+            {...props}
+            firstChild={children[0]?.entity}
+            blurred={blurred}
           />
         </div>
+        <BlockChildren
+          parentFocused={props.parentFocused || focused}
+          entityID={props.entityID}
+          after={props.after}
+          depth={props.depth}
+        />
       </div>
     </div>
   );
@@ -188,9 +185,8 @@ const ToggleOpen = (props: { entityID: string; count: number }) => {
   let setOpen = useUIState((s) => s.setOpen);
   return (
     <button
-      className={`w-fit self-start pt-4 text-grey-35 ${
-        props.count === 0 ? "opacity-0" : ""
-      }`}
+      className={`w-fit self-start pt-[10px] text-grey-35 ${props.count === 0 ? "opacity-0" : ""
+        }`}
       onClick={() => {
         if (props.count > 0) setOpen(props.entityID, !expanded);
       }}
