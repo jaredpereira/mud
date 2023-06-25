@@ -146,7 +146,7 @@ export const BlockContent = (
         id={props.entityID}
         textareaRef={textareaRef}
         onSelect={onSelect}
-        className={`h-full min-h-[24px] w-full scroll-mb-4 bg-inherit ${
+        className={`h-full min-h-[24px] w-full scroll-m-12 bg-inherit ${
           props.blurred ? "opacity-25" : ""
         }
           `}
