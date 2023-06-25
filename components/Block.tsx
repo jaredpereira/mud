@@ -5,6 +5,7 @@ import { db, useMutations } from "hooks/useReplicache";
 import { useUIState } from "hooks/useUIState";
 import { SyntheticEvent, useCallback, useRef, useState } from "react";
 import { getCoordinatesInTextarea } from "src/getCoordinatesInTextarea";
+import { scanIndex } from "src/replicache";
 import { getLinkAtCursor, sortByPosition } from "src/utils";
 import { Caret } from "./Icons";
 
@@ -53,6 +54,7 @@ export function Block(props: BlockProps) {
             blurred={blurred}
           />
         </div>
+        <BlockBacklinks entityID={props.entityID} />
         <BlockChildren
           parentFocused={props.parentFocused || focused}
           entityID={props.entityID}
@@ -62,6 +64,58 @@ export function Block(props: BlockProps) {
       </div>
     </div>
   );
+}
+
+function BlockBacklinks(props: { entityID: string }) {
+  let [open, setOpen] = useState(false);
+  let backlinks = db.useReference(props.entityID, "block/inline-link-to");
+  if (backlinks.length === 0) return null;
+  return (
+    <div className="flex flex-col">
+      <button className="self-end text-xs" onClick={() => setOpen(!open)}>
+        🔗 {backlinks.length}
+      </button>
+      {open && (
+        <div>
+          {backlinks.map((b) => (
+            <Backlink entityID={b.entity} key={b.id} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Backlink(props: { entityID: string }) {
+  let content = db.useEntity(props.entityID, "block/content");
+  let { rep } = useMutations();
+  let open = async () => {
+    if (!rep) return;
+    let path = await rep.query(async (tx) => {
+      let path = [];
+      let current = props.entityID;
+      while (current) {
+        let parent = await scanIndex(tx).eav(current, "block/parent");
+        if (!parent) break;
+        path.push(parent.value.value);
+        current = parent.value.value;
+      }
+      return path;
+    });
+    let state = useUIState.getState();
+    if (state.root && !path.includes(state.root)) {
+      state.setRoot(undefined);
+    }
+    useUIState.setState((s) => ({
+      s,
+      openStates: {
+        ...s.openStates,
+        ...Object.fromEntries(path.map((p) => [p, true])),
+      },
+    }));
+    state.setFocused(props.entityID);
+  };
+  return <span onClick={() => open()}>{content?.value}</span>;
 }
 
 export const BlockContent = (
