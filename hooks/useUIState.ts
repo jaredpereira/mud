@@ -1,5 +1,5 @@
 import Router from "next/router";
-import { ReadTransaction } from "replicache";
+import { ReadTransaction, Replicache } from "replicache";
 import { scanIndex } from "src/replicache";
 import { sortByPosition } from "src/utils";
 import { create } from "zustand";
@@ -50,4 +50,31 @@ export async function getLastOpenChild(
   );
   if (children.length === 0) return parent;
   return getLastOpenChild(tx, children[children.length - 1].entity);
+}
+
+export async function openBlock(block: string, rep: Replicache) {
+  let path = await rep.query(async (tx) => {
+    let path = [];
+    let current = block;
+    while (current) {
+      let parent = await scanIndex(tx).eav(current, "block/parent");
+      if (!parent) break;
+      path.push(parent.value.value);
+      current = parent.value.value;
+    }
+    return path;
+  });
+  let state = useUIState.getState();
+  if (state.root && !path.includes(state.root)) {
+    state.setRoot(undefined);
+  }
+  useUIState.setState((s) => ({
+    s,
+    openStates: {
+      ...s.openStates,
+      ...Object.fromEntries(path.map((p) => [p, true])),
+    },
+  }));
+  state.setFocused(block);
+  document.getElementById(block)?.scrollIntoView();
 }

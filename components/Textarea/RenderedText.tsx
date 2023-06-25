@@ -1,7 +1,7 @@
 import React, { forwardRef, useCallback } from "react";
 import Linkify from "linkify-react";
 import { parseLine } from "src/parseMarkdownLine";
-import { useUIState } from "hooks/useUIState";
+import { openBlock, useUIState } from "hooks/useUIState";
 import { useMutations } from "hooks/useReplicache";
 import { scanIndex } from "src/replicache";
 
@@ -16,32 +16,7 @@ export const RenderedText = forwardRef<
       let block = await rep.query((tx) =>
         scanIndex(tx).ave("block/unique-name", link.slice(2, -2))
       );
-      if (block) {
-        let entity = block.entity;
-        let path = await rep.query(async (tx) => {
-          let path = [];
-          let current = entity;
-          while (current) {
-            let parent = await scanIndex(tx).eav(current, "block/parent");
-            if (!parent) break;
-            path.push(parent.value.value);
-            current = parent.value.value;
-          }
-          return path;
-        });
-        let state = useUIState.getState();
-        if (state.root && !path.includes(state.root)) {
-          state.setRoot(undefined);
-        }
-        useUIState.setState((s) => ({
-          s,
-          openStates: {
-            ...s.openStates,
-            ...Object.fromEntries(path.map((p) => [p, true])),
-          },
-        }));
-        state.setFocused(block.entity);
-      }
+      if (block) openBlock(block?.entity, rep);
     },
     [rep]
   );

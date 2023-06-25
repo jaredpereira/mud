@@ -2,7 +2,7 @@ import { Autocomplete, useAutocompleteState } from "components/Autocomplete";
 import { Textarea } from "components/Textarea";
 import { useKeyboardHandling } from "hooks/useKeyboardHandling";
 import { db, useMutations } from "hooks/useReplicache";
-import { useUIState } from "hooks/useUIState";
+import { openBlock, useUIState } from "hooks/useUIState";
 import { SyntheticEvent, useCallback, useRef, useState } from "react";
 import { getCoordinatesInTextarea } from "src/getCoordinatesInTextarea";
 import { scanIndex } from "src/replicache";
@@ -91,29 +91,7 @@ function Backlink(props: { entityID: string }) {
   let { rep } = useMutations();
   let open = async () => {
     if (!rep) return;
-    let path = await rep.query(async (tx) => {
-      let path = [];
-      let current = props.entityID;
-      while (current) {
-        let parent = await scanIndex(tx).eav(current, "block/parent");
-        if (!parent) break;
-        path.push(parent.value.value);
-        current = parent.value.value;
-      }
-      return path;
-    });
-    let state = useUIState.getState();
-    if (state.root && !path.includes(state.root)) {
-      state.setRoot(undefined);
-    }
-    useUIState.setState((s) => ({
-      s,
-      openStates: {
-        ...s.openStates,
-        ...Object.fromEntries(path.map((p) => [p, true])),
-      },
-    }));
-    state.setFocused(props.entityID);
+    openBlock(props.entityID, rep);
   };
   return <span onClick={() => open()}>{content?.value}</span>;
 }
