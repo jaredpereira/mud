@@ -6,7 +6,12 @@ import { Replicache } from "replicache";
 import { generateKeyBetween } from "src/fractional-indexing";
 import { scanIndex } from "src/replicache";
 import { ulid } from "src/ulid";
-import { modifyString, sortByPosition, Transaction } from "src/utils";
+import {
+  getLinkAtCursor,
+  modifyString,
+  sortByPosition,
+  Transaction,
+} from "src/utils";
 import { useMutations } from "./useReplicache";
 import { getLastOpenChild, useUIState } from "./useUIState";
 
@@ -741,6 +746,46 @@ export const shortcuts: {
         keepFocus(entityID, start, end);
       }
       if (parent) document.getElementById(parent)?.focus();
+    },
+  },
+  {
+    key: "o",
+    ctrlKey: true,
+    description: "Open link at point",
+    callback: async ({ rep, start, value }) => {
+      let link = getLinkAtCursor(value, start);
+      if (!link) return;
+      let l = link.value;
+      if (!rep) return;
+      let block = await rep.query((tx) =>
+        scanIndex(tx).ave("block/unique-name", l)
+      );
+      if (block) {
+        let entity = block.entity;
+        let path = await rep.query(async (tx) => {
+          let path = [];
+          let current = entity;
+          while (current) {
+            let parent = await scanIndex(tx).eav(current, "block/parent");
+            if (!parent) break;
+            path.push(parent.value.value);
+            current = parent.value.value;
+          }
+          return path;
+        });
+        let state = useUIState.getState();
+        if (state.root && !path.includes(state.root)) {
+          state.setRoot(undefined);
+        }
+        useUIState.setState((s) => ({
+          s,
+          openStates: {
+            ...s.openStates,
+            ...Object.fromEntries(path.map((p) => [p, true])),
+          },
+        }));
+        state.setFocused(block.entity);
+      }
     },
   },
 ];
