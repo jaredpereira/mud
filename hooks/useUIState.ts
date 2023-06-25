@@ -66,7 +66,7 @@ export async function openBlock(block: string, rep: Replicache) {
   });
   let state = useUIState.getState();
   if (state.root && !path.includes(state.root)) {
-    state.setRoot(undefined);
+    state.setRoot(block);
   }
   useUIState.setState((s) => ({
     s,
