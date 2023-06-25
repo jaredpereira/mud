@@ -33,6 +33,13 @@ export const RenderedText = forwardRef<
         if (state.root && !path.includes(state.root)) {
           state.setRoot(undefined);
         }
+        useUIState.setState((s) => ({
+          s,
+          openStates: {
+            ...s.openStates,
+            ...Object.fromEntries(path.map((p) => [p, true])),
+          },
+        }));
         state.setFocused(block.entity);
       }
     },
