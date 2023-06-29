@@ -261,9 +261,7 @@ const updateBlockContent: Mutation<{ block: string; content: string }> = async (
         args.block,
         "block/inline-link-to"
       );
-      console.log(existingLinks);
       for (let link of existingLinks) {
-        console.log(link);
         let content = await ctx.scanIndex.eav(link.entity, "block/content");
         if (!content) continue;
         await ctx.assertFact({
@@ -293,7 +291,6 @@ const updateBlockContent: Mutation<{ block: string; content: string }> = async (
       title: await ctx.scanIndex.eav(l.value.value, "block/unique-name"),
     }))
   );
-  console.log(existingLinks);
   let newLinks = [...args.content.matchAll(/\[\[([^\[\n\]]*)\]\]/g)];
 
   let linkstoremove = existingLinks.filter(

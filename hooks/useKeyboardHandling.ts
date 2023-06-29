@@ -485,7 +485,6 @@ export const shortcuts: {
     description: "Expand or collapse children",
     ctrlKey: true,
     callback: ({ entityID }) => {
-      console.log("yo");
       useUIState.setState((s) => {
         if (entityID)
           return {
