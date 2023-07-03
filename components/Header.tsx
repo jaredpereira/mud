@@ -12,9 +12,9 @@ export const Header = () => {
   let { mutate, rep } = useMutations();
   return (
     <>
-      <div className="h-6 p-4" />
+      <div className="h-6 p-4 print:hidden" />
       <div
-        className="fixed z-10 h-6 w-full border-b bg-background"
+        className="fixed z-10 h-6 w-full border-b bg-background print:hidden"
         style={{ top: 0, left: 0 }}
       >
         <div className="m-auto flex  max-w-3xl flex-row justify-between gap-2 pl-2  pr-6">
