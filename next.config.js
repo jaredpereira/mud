@@ -6,6 +6,7 @@ const withPWA = require("next-pwa")({
   mode: "production",
   disable: process.env.NODE_ENV !== "production",
   reloadOnOnline: false,
+  cacheOnFrontEndNav: true,
 });
 const nextConfig = {
   /* config options here */
