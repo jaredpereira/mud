@@ -5,6 +5,7 @@ const withPWA = require("next-pwa")({
   dest: "public",
   mode: "production",
   disable: process.env.NODE_ENV !== "production",
+  reloadOnOnline: false,
 });
 const nextConfig = {
   /* config options here */
